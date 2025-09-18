@@ -1,0 +1,67 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+
+opt_in_rules:
+  - array_init
+  - closure_spacing
+  - collection_alignment
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - modifier_order
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - switch_case_alignment
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+
+included:
+  - AppleHealthGenerator/Sources
+  - HealthGeneratorApp/HealthGeneratorApp/Sources
+
+excluded:
+  - HealthGeneratorApp/Derived
+  - HealthGeneratorApp/build
+  - HealthGeneratorApp/venv
+  - .build
+
+line_length:
+  warning: 120
+  error: 150
+
+function_body_length:
+  warning: 60
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 500
+  error: 1000
+
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 50
+    error: 60
+
+custom_rules:
+  no_print:
+    name: "No Print Statements"
+    regex: "print\\("
+    message: "Use proper logging instead of print statements"
+    severity: warning
