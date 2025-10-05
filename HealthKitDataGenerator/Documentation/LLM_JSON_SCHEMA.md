@@ -83,6 +83,15 @@ Current version: `1.0`
         "multiplier": 1.2,
         "variability": 0.3
       }
+    },
+    "advancedPattern": {
+      "type": "seasonal",
+      "peakMonths": [6, 7, 8],
+      "sparseProbability": 0.7,
+      "startMultiplier": 0.8,
+      "endMultiplier": 1.2,
+      "interval": 2,
+      "cyclePeriod": 7
     }
   }
 }
@@ -166,6 +175,32 @@ All available metrics:
 - `weekdays_only` - Monday-Friday only
 - `weekends_only` - Saturday-Sunday only
 - `custom` - Custom day selection
+
+### Enhanced Date Range Types
+
+- `last_days` - Last N days (requires `days` field)
+- `this_week` - Current week (Monday-Sunday)
+- `this_month` - Current month
+- `weekdays_only` - Weekdays only in date range
+- `weekends_only` - Weekends only in date range
+- `specific_dates` - Specific dates only
+
+### Advanced Patterns
+
+- `sparse_custom` - Custom probability (0.0-1.0)
+- `seasonal` - More data in specific months
+- `progressive` - Gradual increase/decrease over time
+- `every_nth_day` - Every 2nd, 3rd, etc. day
+- `cyclical` - Weekly/monthly cycles
+
+### Enhanced Metric Overrides
+
+- `multiplier` - Multiply profile values
+- `fixedValue` - Use fixed value instead
+- `variability` - Randomness (0.0-1.0)
+- `enabled` - Turn metric on/off
+- `customRange` - Override profile range
+- `timePattern` - When during day metric peaks
 
 ## Direct Sample Specification
 
@@ -310,6 +345,153 @@ Generate data for the past 2 weeks.
 5. **Bedtime**: 0 ≤ hour ≤ 23
 6. **Energy Multiplier**: 0.5 ≤ multiplier ≤ 1.5
 7. **ISO 8601 Dates**: All dates must be valid ISO 8601 format
+
+## Apple Foundation Model Integration
+
+### Natural Language to JSON Conversion
+
+The schema is designed to work seamlessly with Apple Foundation Model for natural language processing:
+
+#### Example 1: Marathon Training
+**Natural Language Input:**
+```
+"Create health data for a marathon runner in peak training. They run 6 days a week, average 50-70 miles per week, have excellent sleep, and maintain a high-protein diet. Start from January 1, 2025."
+```
+
+**Foundation Model Output:**
+```json
+{
+  "schema_version": "1.0",
+  "generation_config": {
+    "profile": {
+      "id": "marathon_peak_training",
+      "name": "Marathon Peak Training",
+      "description": "Peak marathon training phase",
+      "dailyStepsRange": {"lowerBound": 18000, "upperBound": 30000},
+      "workoutFrequency": "active",
+      "preferredWorkoutTypes": ["running", "yoga"],
+      "sleepDurationRange": {"lowerBound": 8.0, "upperBound": 9.5},
+      "sleepQuality": "excellent",
+      "bedtimeRange": {"lowerBound": 21, "upperBound": 22},
+      "restingHeartRateRange": {"lowerBound": 42, "upperBound": 50},
+      "maxHeartRateRange": {"lowerBound": 185, "upperBound": 200},
+      "heartRateVariability": "high",
+      "basalEnergyMultiplier": 1.15,
+      "activeEnergyRange": {"lowerBound": 1000, "upperBound": 1800},
+      "stressLevel": "moderate",
+      "recoveryRate": "fast",
+      "dietaryPattern": "high_protein",
+      "hydrationLevel": "high"
+    },
+    "dateRange": {
+      "type": "last_days",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2025-01-07T23:59:59Z",
+      "days": 7
+    },
+    "metricsToGenerate": [
+      "steps", "heart_rate", "workouts", "sleep_analysis", 
+      "active_energy", "basal_energy", "water"
+    ],
+    "pattern": "continuous",
+    "advancedPattern": {
+      "type": "progressive",
+      "startMultiplier": 0.8,
+      "endMultiplier": 1.2
+    },
+    "customOverrides": {
+      "steps": {
+        "timePattern": "morning_peak",
+        "multiplier": 1.2
+      }
+    }
+  }
+}
+```
+
+#### Example 2: Recovery Week
+**Natural Language Input:**
+```
+"Generate a recovery week for an athlete. Reduced activity, more sleep, no intense workouts, focus on gentle movement."
+```
+
+**Foundation Model Output:**
+```json
+{
+  "schema_version": "1.0",
+  "generation_config": {
+    "profile": {
+      "id": "recovery_athlete",
+      "name": "Recovery Athlete",
+      "description": "Athlete in recovery phase",
+      "dailyStepsRange": {"lowerBound": 5000, "upperBound": 8000},
+      "workoutFrequency": "light",
+      "preferredWorkoutTypes": ["walking", "yoga"],
+      "sleepDurationRange": {"lowerBound": 8.5, "upperBound": 10.0},
+      "sleepQuality": "excellent",
+      "bedtimeRange": {"lowerBound": 21, "upperBound": 22},
+      "restingHeartRateRange": {"lowerBound": 50, "upperBound": 60},
+      "maxHeartRateRange": {"lowerBound": 160, "upperBound": 175},
+      "heartRateVariability": "high",
+      "basalEnergyMultiplier": 1.0,
+      "activeEnergyRange": {"lowerBound": 200, "upperBound": 400},
+      "stressLevel": "low",
+      "recoveryRate": "fast",
+      "dietaryPattern": "mediterranean",
+      "hydrationLevel": "high"
+    },
+    "dateRange": {
+      "type": "last_days",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2025-01-07T23:59:59Z",
+      "days": 7
+    },
+    "metricsToGenerate": [
+      "steps", "heart_rate", "sleep_analysis", "mindful_minutes"
+    ],
+    "pattern": "continuous",
+    "customOverrides": {
+      "workouts": {
+        "enabled": false
+      },
+      "active_energy": {
+        "multiplier": 0.3
+      },
+      "sleep_analysis": {
+        "customRange": {"lowerBound": 8.5, "upperBound": 10.0}
+      }
+    }
+  }
+}
+```
+
+### Foundation Model Prompt Templates
+
+#### Training Program Template
+```
+"Create health data for [persona] training for [event]. 
+- Duration: [timeframe]
+- Activity level: [intensity]
+- Focus: [specific goals]
+- Constraints: [limitations]"
+```
+
+#### Seasonal Pattern Template
+```
+"Generate [timeframe] of health data for [persona] with [seasonal pattern].
+- Peak months: [months]
+- Activity focus: [activities]
+- Sleep pattern: [sleep description]"
+```
+
+#### Recovery Template
+```
+"Create recovery data for [persona] after [event/injury].
+- Duration: [timeframe]
+- Activity reduction: [percentage]
+- Focus: [recovery activities]
+- Sleep priority: [sleep emphasis]"
+```
 
 ## Error Handling
 
