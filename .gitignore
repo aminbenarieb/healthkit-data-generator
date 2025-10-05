@@ -141,3 +141,6 @@ Temporary Items
 
 # Export options
 ExportOptions*.plist
+
+# Build Server (machine-specific, auto-generated)
+buildServer.json
