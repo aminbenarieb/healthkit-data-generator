@@ -46,7 +46,7 @@ jobs:
     
     - name: Build Swift Package
       run: |
-        cd AppleHealthGenerator
+        cd HealthKitDataGenerator
         swift build -c release
     
     - name: Generate Changelog
@@ -111,7 +111,7 @@ jobs:
     
     - name: Validate Swift Package
       run: |
-        cd AppleHealthGenerator
+        cd HealthKitDataGenerator
         swift package resolve
         swift build -c release
         swift test -c release

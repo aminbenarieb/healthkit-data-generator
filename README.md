@@ -16,7 +16,7 @@ A modern SwiftUI app for generating and managing Apple Health data, featuring bo
 - 🧹 **Data Cleanup**: Clean all app-generated health data from HealthKit
 - 📱 **Modern UI**: Built with SwiftUI and iOS 18 design patterns
 - 🔒 **Privacy Focused**: Proper HealthKit permissions and user control
-- 📦 **Swift Package**: Reusable AppleHealthGenerator package
+- 📦 **Swift Package**: Reusable HealthKitDataGenerator package
 - 🚀 **CI/CD Ready**: Complete GitHub Actions workflows
 
 ## Requirements
@@ -47,7 +47,7 @@ The project is organized using Tuist for project generation and includes:
 
 - **SwiftUI Interface**: Modern, accessible UI built with SwiftUI
 - **HealthKit Manager**: Centralized health data management
-- **SPM Dependencies**: Uses AppleHealthGenerator package from the parent workspace
+- **SPM Dependencies**: Uses HealthKitDataGenerator package from the parent workspace
 - **Proper Entitlements**: Configured for HealthKit access
 
 ## Usage
@@ -106,9 +106,9 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ```
 health-generator-app/
-├── AppleHealthGenerator/          # Swift Package for health data generation
-│   ├── Sources/AppleHealthGenerator/
-│   └── Tests/AppleHealthGeneratorTests/
+├── HealthKitDataGenerator/          # Swift Package for health data generation
+│   ├── Sources/HealthKitDataGenerator/
+│   └── Tests/HealthKitDataGeneratorTests/
 ├── HealthGeneratorApp/            # SwiftUI iOS application
 │   ├── HealthGeneratorApp/Sources/
 │   └── HealthGeneratorApp/Tests/
@@ -122,7 +122,7 @@ health-generator-app/
 
 ### Swift Package Manager
 
-Add the AppleHealthGenerator package to your project:
+Add the HealthKitDataGenerator package to your project:
 
 ```swift
 dependencies: [
@@ -144,7 +144,7 @@ open HealthGeneratorApp.xcworkspace
 ### Swift Package Usage
 
 ```swift
-import AppleHealthGenerator
+import HealthKitDataGenerator
 
 let generator = HealthKitDataGenerator()
 try await generator.generateHealthData(sampleCount: 100)
@@ -175,7 +175,7 @@ git clone https://github.com/aminbenarieb/health-generator-app.git
 cd health-generator-app
 
 # Build and test Swift Package
-cd AppleHealthGenerator
+cd HealthKitDataGenerator
 swift build && swift test
 
 # Generate and build iOS app

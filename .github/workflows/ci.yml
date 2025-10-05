@@ -30,12 +30,12 @@ jobs:
     
     - name: Build Swift Package
       run: |
-        cd AppleHealthGenerator
+        cd HealthKitDataGenerator
         swift build -v
     
     - name: Run Swift Package Tests
       run: |
-        cd AppleHealthGenerator
+        cd HealthKitDataGenerator
         swift test -v
 
   build-ios-app:

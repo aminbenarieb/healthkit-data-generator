@@ -29,14 +29,14 @@ Thank you for your interest in contributing to the Health Generator App! This do
 
 3. **Set up the Swift Package**
    ```bash
-   cd AppleHealthGenerator
+   cd HealthKitDataGenerator
    swift build
    swift test
    ```
 
 ## Project Structure
 
-- `AppleHealthGenerator/` - Swift Package for health data generation
+- `HealthKitDataGenerator/` - Swift Package for health data generation
 - `HealthGeneratorApp/` - SwiftUI iOS app that uses the package
 - `.github/workflows/` - CI/CD workflows
 - `HealthGeneratorApp/create_*.py` - Python scripts for icon generation
@@ -66,7 +66,7 @@ Thank you for your interest in contributing to the Health Generator App! This do
 3. **Test your changes**
    ```bash
    # Test Swift Package
-   cd AppleHealthGenerator
+   cd HealthKitDataGenerator
    swift test
    
    # Test iOS App
@@ -128,7 +128,7 @@ docs: update README with new installation steps
 ### Swift Package Tests
 
 ```bash
-cd AppleHealthGenerator
+cd HealthKitDataGenerator
 swift test
 ```
 
