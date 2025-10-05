@@ -2,6 +2,28 @@ import SwiftUI
 import HealthKit
 import HealthKitDataGenerator
 
+// MARK: - Date Range Type for UI
+
+enum DateRangeType: String, CaseIterable {
+    case lastDays = "last_days"
+    case thisWeek = "this_week"
+    case thisMonth = "this_month"
+    case weekdaysOnly = "weekdays_only"
+    case weekendsOnly = "weekends_only"
+    case specificDates = "specific_dates"
+    
+    var displayName: String {
+        switch self {
+        case .lastDays: return "Last N Days"
+        case .thisWeek: return "This Week"
+        case .thisMonth: return "This Month"
+        case .weekdaysOnly: return "Weekdays"
+        case .weekendsOnly: return "Weekends"
+        case .specificDates: return "Specific"
+        }
+    }
+}
+
 public struct ContentView: View {
     @StateObject private var healthKitManager = HealthKitManager.shared
     @State private var sampleCount: UInt = 7
@@ -9,6 +31,15 @@ public struct ContentView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var showingJSONImport = false
+    
+    // Enhanced UI State
+    @State private var selectedDateRangeType: DateRangeType = .lastDays
+    @State private var selectedPattern: GenerationPattern = .continuous
+    @State private var selectedAdvancedPattern: AdvancedPattern = .sparseCustom
+    @State private var sparseProbability: Double = 0.7
+    @State private var showingAdvancedOptions = false
+    @State private var selectedMetrics: Set<HealthMetric> = Set(HealthMetric.allCases)
+    @State private var showingMetricCustomization = false
     
     public init() {}
 
@@ -75,12 +106,32 @@ public struct ContentView: View {
                             Text("Health Profile")
                                 .font(.headline)
                             
-                            Picker("Profile", selection: $selectedProfile) {
-                                ForEach(HealthProfile.allPresets, id: \.id) { profile in
-                                    Text(profile.name).tag(profile)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(HealthProfile.allPresets, id: \.id) { profile in
+                                        Button(action: {
+                                            selectedProfile = profile
+                                        }) {
+                                            Text(profile.name)
+                                                .font(.caption)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    selectedProfile.id == profile.id 
+                                                    ? Color.blue 
+                                                    : Color.gray.opacity(0.2)
+                                                )
+                                                .foregroundColor(
+                                                    selectedProfile.id == profile.id 
+                                                    ? .white 
+                                                    : .primary
+                                                )
+                                                .cornerRadius(8)
+                                        }
+                                    }
                                 }
+                                .padding(.horizontal, 4)
                             }
-                            .pickerStyle(.segmented)
                             
                             Text(selectedProfile.description)
                                 .font(.caption)
@@ -91,20 +142,109 @@ public struct ContentView: View {
                         .background(.regularMaterial)
                         .cornerRadius(12)
                         
-                        // Sample Count Input
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Number of Days")
+                        // Date Range Selection
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Date Range")
                                 .font(.headline)
                             
-                            HStack {
-                                TextField("Days", value: $sampleCount, format: .number)
-                                    .keyboardType(.numberPad)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                
-                                Stepper("", value: $sampleCount, in: 1...90, step: 1)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(DateRangeType.allCases, id: \.self) { type in
+                                        Button(action: {
+                                            selectedDateRangeType = type
+                                        }) {
+                                            Text(type.displayName)
+                                                .font(.caption)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    selectedDateRangeType == type 
+                                                    ? Color.blue 
+                                                    : Color.gray.opacity(0.2)
+                                                )
+                                                .foregroundColor(
+                                                    selectedDateRangeType == type 
+                                                    ? .white 
+                                                    : .primary
+                                                )
+                                                .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
                             }
                             
-                            Text("Generate data for the last \(sampleCount) day\(sampleCount == 1 ? "" : "s")")
+                            if selectedDateRangeType == .lastDays {
+                                HStack {
+                                    Text("Days:")
+                                        .font(.subheadline)
+                                    
+                                    TextField("Days", value: $sampleCount, format: .number)
+                                        .keyboardType(.numberPad)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .frame(width: 80)
+                                    
+                                    Stepper("", value: $sampleCount, in: 1...90, step: 1)
+                                    
+                                    Spacer()
+                                }
+                                
+                                Text("Generate data for the last \(sampleCount) day\(sampleCount == 1 ? "" : "s")")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text(selectedDateRangeType.displayName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding()
+                        .background(.regularMaterial)
+                        .cornerRadius(12)
+                        
+                        // Generation Pattern Selection
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Generation Pattern")
+                                .font(.headline)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach([GenerationPattern.continuous, .sparse, .weekdaysOnly, .weekendsOnly], id: \.self) { pattern in
+                                        Button(action: {
+                                            selectedPattern = pattern
+                                        }) {
+                                            Text(pattern.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                                .font(.caption)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    selectedPattern == pattern 
+                                                    ? Color.blue 
+                                                    : Color.gray.opacity(0.2)
+                                                )
+                                                .foregroundColor(
+                                                    selectedPattern == pattern 
+                                                    ? .white 
+                                                    : .primary
+                                                )
+                                                .cornerRadius(8)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                            }
+                            
+                            if selectedPattern == .sparse {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Sparse Probability: \(Int(sparseProbability * 100))%")
+                                        .font(.subheadline)
+                                    
+                                    Slider(value: $sparseProbability, in: 0.1...1.0, step: 0.1)
+                                        .accentColor(.blue)
+                                }
+                            }
+                            
+                            Text(selectedPattern.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -112,9 +252,71 @@ public struct ContentView: View {
                         .background(.regularMaterial)
                         .cornerRadius(12)
                         
+                        // Advanced Options Toggle
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Advanced Options")
+                                    .font(.headline)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showingAdvancedOptions.toggle()
+                                    }
+                                }) {
+                                    Image(systemName: showingAdvancedOptions ? "chevron.up" : "chevron.down")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            
+                            if showingAdvancedOptions {
+                                VStack(spacing: 12) {
+                                    // Advanced Pattern Selection
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Advanced Pattern")
+                                            .font(.subheadline)
+                                        
+                                        Picker("Advanced Pattern", selection: $selectedAdvancedPattern) {
+                                            Text("Sparse Custom").tag(AdvancedPattern.sparseCustom)
+                                            Text("Seasonal").tag(AdvancedPattern.seasonal)
+                                            Text("Progressive").tag(AdvancedPattern.progressive)
+                                            Text("Every Nth Day").tag(AdvancedPattern.everyNthDay)
+                                            Text("Cyclical").tag(AdvancedPattern.cyclical)
+                                        }
+                                        .pickerStyle(.menu)
+                                    }
+                                    
+                                    // Metric Selection
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Text("Metrics to Generate")
+                                                .font(.subheadline)
+                                            
+                                            Spacer()
+                                            
+                                            Button("Customize") {
+                                                showingMetricCustomization = true
+                                            }
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                        }
+                                        
+                                        Text("\(selectedMetrics.count) of \(HealthMetric.allCases.count) metrics selected")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                            }
+                        }
+                        .padding()
+                        .background(.regularMaterial)
+                        .cornerRadius(12)
+                        
                         // Generate Button
                         Button(action: {
-                            healthKitManager.generateHealthData(count: sampleCount, profile: selectedProfile)
+                            generateHealthDataWithEnhancedConfig()
                         }) {
                             HStack {
                                 if healthKitManager.isGeneratingInProgress {
@@ -218,9 +420,123 @@ public struct ContentView: View {
         .sheet(isPresented: $showingJSONImport) {
             JSONImportView()
         }
+        .sheet(isPresented: $showingMetricCustomization) {
+            MetricCustomizationView(selectedMetrics: $selectedMetrics)
+        }
         .task {
             if HKHealthStore.isHealthDataAvailable() && !healthKitManager.isAuthorized {
                 await healthKitManager.requestAuthorization()
+            }
+        }
+    }
+    
+    // MARK: - Enhanced Generation Method
+    
+    private func generateHealthDataWithEnhancedConfig() {
+        // Create date range based on selection
+        let dateRange: DateRange
+        switch selectedDateRangeType {
+        case .lastDays:
+            dateRange = .lastDays(sampleCount)
+        case .thisWeek:
+            dateRange = .thisWeek()
+        case .thisMonth:
+            dateRange = .thisMonth()
+        case .weekdaysOnly:
+            let endDate = Date()
+            let startDate = Calendar.current.date(byAdding: .day, value: -Int(sampleCount), to: endDate) ?? endDate
+            dateRange = .weekdaysOnly(start: startDate, end: endDate)
+        case .weekendsOnly:
+            let endDate = Date()
+            let startDate = Calendar.current.date(byAdding: .day, value: -Int(sampleCount), to: endDate) ?? endDate
+            dateRange = .weekendsOnly(start: startDate, end: endDate)
+        case .specificDates:
+            // For now, fall back to last days - could be enhanced with date picker
+            dateRange = .lastDays(sampleCount)
+        }
+        
+        // Create enhanced configuration
+        let config = SampleGenerationConfig(
+            profile: selectedProfile,
+            dateRange: dateRange,
+            metricsToGenerate: selectedMetrics,
+            pattern: selectedPattern,
+            randomSeed: nil,
+            customOverrides: nil
+        )
+        
+        // Generate with enhanced config
+        healthKitManager.generateHealthData(config: config)
+    }
+}
+
+// MARK: - Metric Customization View
+
+struct MetricCustomizationView: View {
+    @Binding var selectedMetrics: Set<HealthMetric>
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Select Metrics to Generate") {
+                    ForEach(HealthMetric.allCases, id: \.self) { metric in
+                        HStack {
+                            Text(metric.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                .font(.subheadline)
+                            
+                            Spacer()
+                            
+                            if selectedMetrics.contains(metric) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.blue)
+                            } else {
+                                Image(systemName: "circle")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selectedMetrics.contains(metric) {
+                                selectedMetrics.remove(metric)
+                            } else {
+                                selectedMetrics.insert(metric)
+                            }
+                        }
+                    }
+                }
+                
+                Section {
+                    HStack {
+                        Button("Select All") {
+                            selectedMetrics = Set(HealthMetric.allCases)
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Spacer()
+                        
+                        Button("Select None") {
+                            selectedMetrics.removeAll()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
+            .navigationTitle("Customize Metrics")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
             }
         }
     }

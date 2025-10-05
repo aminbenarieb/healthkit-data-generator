@@ -269,5 +269,99 @@ extension HealthProfile {
     public static func preset(withId id: String) -> HealthProfile? {
         return allPresets.first { $0.id == id }
     }
+    
+    /// Create a custom profile based on an existing one with overrides
+    public static func custom(
+        basedOn baseProfile: HealthProfile,
+        id: String? = nil,
+        name: String? = nil,
+        description: String? = nil,
+        dailyStepsRange: ClosedRange<Int>? = nil,
+        workoutFrequency: WorkoutFrequency? = nil,
+        preferredWorkoutTypes: [WorkoutType]? = nil,
+        sleepDurationRange: ClosedRange<TimeInterval>? = nil,
+        sleepQuality: SleepQuality? = nil,
+        bedtimeRange: ClosedRange<Int>? = nil,
+        restingHeartRateRange: ClosedRange<Int>? = nil,
+        maxHeartRateRange: ClosedRange<Int>? = nil,
+        heartRateVariability: HeartRateVariability? = nil,
+        basalEnergyMultiplier: Double? = nil,
+        activeEnergyRange: ClosedRange<Int>? = nil,
+        stressLevel: StressLevel? = nil,
+        recoveryRate: RecoveryRate? = nil,
+        dietaryPattern: DietaryPattern? = nil,
+        hydrationLevel: HydrationLevel? = nil
+    ) -> HealthProfile {
+        return HealthProfile(
+            id: id ?? "\(baseProfile.id)_custom",
+            name: name ?? "\(baseProfile.name) (Custom)",
+            description: description ?? baseProfile.description,
+            dailyStepsRange: dailyStepsRange ?? baseProfile.dailyStepsRange,
+            workoutFrequency: workoutFrequency ?? baseProfile.workoutFrequency,
+            preferredWorkoutTypes: preferredWorkoutTypes ?? baseProfile.preferredWorkoutTypes,
+            sleepDurationRange: sleepDurationRange ?? baseProfile.sleepDurationRange,
+            sleepQuality: sleepQuality ?? baseProfile.sleepQuality,
+            bedtimeRange: bedtimeRange ?? baseProfile.bedtimeRange,
+            restingHeartRateRange: restingHeartRateRange ?? baseProfile.restingHeartRateRange,
+            maxHeartRateRange: maxHeartRateRange ?? baseProfile.maxHeartRateRange,
+            heartRateVariability: heartRateVariability ?? baseProfile.heartRateVariability,
+            basalEnergyMultiplier: basalEnergyMultiplier ?? baseProfile.basalEnergyMultiplier,
+            activeEnergyRange: activeEnergyRange ?? baseProfile.activeEnergyRange,
+            stressLevel: stressLevel ?? baseProfile.stressLevel,
+            recoveryRate: recoveryRate ?? baseProfile.recoveryRate,
+            dietaryPattern: dietaryPattern ?? baseProfile.dietaryPattern,
+            hydrationLevel: hydrationLevel ?? baseProfile.hydrationLevel
+        )
+    }
+    
+    /// Validate the profile for physiological consistency
+    public func validate() -> [ValidationError] {
+        var errors: [ValidationError] = []
+        
+        // Check heart rate ranges
+        if restingHeartRateRange.lowerBound >= maxHeartRateRange.lowerBound {
+            errors.append(.init(
+                field: "heartRate",
+                message: "Resting heart rate must be lower than max heart rate"
+            ))
+        }
+        
+        // Check sleep duration
+        if sleepDurationRange.lowerBound < 2.0 || sleepDurationRange.upperBound > 14.0 {
+            errors.append(.init(
+                field: "sleepDuration",
+                message: "Sleep duration should be between 2-14 hours"
+            ))
+        }
+        
+        // Check steps range
+        if dailyStepsRange.lowerBound < 0 || dailyStepsRange.upperBound > 100000 {
+            errors.append(.init(
+                field: "steps",
+                message: "Daily steps should be between 0-100,000"
+            ))
+        }
+        
+        // Check energy multiplier
+        if basalEnergyMultiplier < 0.5 || basalEnergyMultiplier > 2.0 {
+            errors.append(.init(
+                field: "basalEnergy",
+                message: "Basal energy multiplier should be between 0.5-2.0"
+            ))
+        }
+        
+        return errors
+    }
+}
+
+/// Validation error for profile configuration
+public struct ValidationError: Codable {
+    public let field: String
+    public let message: String
+    
+    public init(field: String, message: String) {
+        self.field = field
+        self.message = message
+    }
 }
 
