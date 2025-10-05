@@ -1,10 +1,3 @@
-//
-//  JsonReader.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 23.10.15.
-//
-//
 
 import Foundation
 

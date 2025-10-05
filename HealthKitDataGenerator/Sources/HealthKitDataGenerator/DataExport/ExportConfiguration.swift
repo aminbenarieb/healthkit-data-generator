@@ -1,10 +1,3 @@
-//
-//  ExportConfiguration.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 16.10.15.
-//
-//
 
 import Foundation
 import HealthKit

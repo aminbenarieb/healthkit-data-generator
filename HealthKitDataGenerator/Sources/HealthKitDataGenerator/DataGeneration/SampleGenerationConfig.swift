@@ -1,9 +1,3 @@
-//
-//  SampleGenerationConfig.swift
-//  HealthKitDataGenerator
-//
-//  Configuration for flexible sample generation
-//
 
 import Foundation
 

@@ -1,10 +1,3 @@
-//
-//  HealthKitStoreCleaner.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 26.10.15.
-//
-//
 
 import Foundation
 import HealthKit

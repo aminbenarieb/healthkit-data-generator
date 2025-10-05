@@ -1,9 +1,3 @@
-//
-//  HealthProfile.swift
-//  HealthKitDataGenerator
-//
-//  Created for flexible health data generation
-//
 
 import Foundation
 

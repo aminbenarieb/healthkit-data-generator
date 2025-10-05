@@ -1,10 +1,3 @@
-//
-//  OutputStreams.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 18.10.15.
-//
-//
 
 import Foundation
 

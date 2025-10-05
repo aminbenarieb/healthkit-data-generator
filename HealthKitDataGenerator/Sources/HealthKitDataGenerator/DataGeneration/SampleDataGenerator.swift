@@ -1,9 +1,3 @@
-//
-//  SampleDataGenerator.swift
-//  HealthKitDataGenerator
-//
-//  Config-based sample generation
-//
 
 import Foundation
 import HealthKit

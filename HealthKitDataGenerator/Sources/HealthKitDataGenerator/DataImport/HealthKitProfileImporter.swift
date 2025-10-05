@@ -1,10 +1,3 @@
-//
-//  HealthKitProfileImporter.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 25.10.15.
-//
-//
 
 import Foundation
 import HealthKit

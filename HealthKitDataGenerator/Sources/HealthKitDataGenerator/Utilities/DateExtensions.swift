@@ -1,10 +1,3 @@
-//
-//  DateExtensions.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 05.10.15.
-//
-//
 
 import Foundation
 

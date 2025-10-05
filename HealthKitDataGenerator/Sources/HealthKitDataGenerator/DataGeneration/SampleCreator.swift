@@ -1,11 +1,3 @@
-//
-//  SampleCreator.swift
-//  HealthKitDataGenerator
-//
-//  Created by Michael Seemann on 29.10.15.
-//
-//
-
 import Foundation
 import HealthKit
 
