@@ -10,14 +10,70 @@ final public class HealthKitDataGenerator {
         self.healthStore = healthStore
     }
     
-    /// Generates and populates HealthKit store with sample data
+    /// Generates and populates HealthKit store with sample data using configuration
     /// - Parameters:
     ///   - samplesTypes: Set of sample types to populate
-    ///   - numberOfDays: Number of days to generate data for (default: 7)
-    ///   - includeBasalCalories: Whether to include basal calorie data (default: true)
-    public func generateAndPopulate(samplesTypes: Set<HKSampleType>, numberOfDays: Int = 7, includeBasalCalories: Bool = true) throws {
-        let generatedSamples = SampleDataGenerator.generateSamples(numberOfDays, includeBasalCalories: includeBasalCalories)
+    ///   - config: Configuration specifying profile, date range, and metrics
+    public func generateAndPopulate(samplesTypes: Set<HKSampleType>, config: SampleGenerationConfig) throws {
+        let generatedSamples = SampleDataGenerator.generateSamples(config: config)
         try populate(samplesTypes: samplesTypes, generatedSamples: generatedSamples)
+    }
+    
+    /// Generates samples based on configuration without populating HealthKit
+    /// - Parameter config: Configuration specifying profile, date range, and metrics
+    /// - Returns: Dictionary containing generated sample data
+    public func generate(config: SampleGenerationConfig) -> [String: Any] {
+        return SampleDataGenerator.generateSamples(config: config)
+    }
+    
+    /// Imports data from LLM-generated JSON
+    /// - Parameter jsonString: JSON string conforming to LLM schema
+    public func importFromLLMJSON(_ jsonString: String) throws {
+        let data = jsonString.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let llmData = try decoder.decode(LLMGenerationData.self, from: data)
+        
+        // If generation_config is provided, generate samples
+        if let config = llmData.generationConfig {
+            let samples = SampleDataGenerator.generateSamples(config: config)
+            let allTypes = HealthKitConstants.authorizationWriteTypes()
+            try populate(samplesTypes: allTypes, generatedSamples: samples)
+        }
+        
+        // If direct samples are provided, import them
+        if let directSamples = llmData.samples {
+            try importDirectSamples(directSamples)
+        }
+    }
+    
+    /// Validates LLM-generated JSON
+    /// - Parameter jsonString: JSON string to validate
+    /// - Returns: True if valid, throws error if invalid
+    public func validateLLMJSON(_ jsonString: String) throws -> Bool {
+        let data = jsonString.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let llmData = try decoder.decode(LLMGenerationData.self, from: data)
+        
+        // Validate schema version
+        guard llmData.schemaVersion == "1.0" else {
+            throw LLMJSONError.unsupportedSchemaVersion(llmData.schemaVersion)
+        }
+        
+        // Validate that at least one of config or samples is provided
+        guard llmData.generationConfig != nil || llmData.samples != nil else {
+            throw LLMJSONError.missingRequiredField("Either generation_config or samples must be provided")
+        }
+        
+        // Validate config if provided
+        if let config = llmData.generationConfig {
+            try validateConfig(config)
+        }
+        
+        return true
     }
         
     /// Populates HealthKit store with generated samples
@@ -72,5 +128,160 @@ final public class HealthKitDataGenerator {
     private func formatTimestamp(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         return formatter.string(from: date)
+    }
+    
+    // MARK: - LLM JSON Support
+    
+    private func importDirectSamples(_ samples: [[String: Any]]) throws {
+        // Convert samples array to JSON string for import
+        let jsonData = try JSONSerialization.data(withJSONObject: ["samples": samples], options: [])
+        let jsonString = String(data: jsonData, encoding: .utf8)!
+        
+        importSamples(text: jsonString) { sample in
+            self.healthStore.save(sample) { success, error in
+                if let error = error {
+                    print("Error importing sample: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func validateConfig(_ config: SampleGenerationConfig) throws {
+        let profile = config.profile
+        
+        // Validate heart rate ranges
+        guard profile.restingHeartRateRange.lowerBound < profile.maxHeartRateRange.lowerBound else {
+            throw LLMJSONError.physiologicallyImpossible("Resting heart rate must be lower than max heart rate")
+        }
+        
+        // Validate sleep duration
+        guard profile.sleepDurationRange.lowerBound >= 4.0 && profile.sleepDurationRange.upperBound <= 12.0 else {
+            throw LLMJSONError.invalidValue("Sleep duration must be between 4.0 and 12.0 hours")
+        }
+        
+        // Validate date range
+        guard config.dateRange.startDate < config.dateRange.endDate else {
+            throw LLMJSONError.invalidValue("Start date must be before end date")
+        }
+        
+        // Validate energy multiplier
+        guard profile.basalEnergyMultiplier >= 0.5 && profile.basalEnergyMultiplier <= 1.5 else {
+            throw LLMJSONError.invalidValue("Basal energy multiplier must be between 0.5 and 1.5")
+        }
+    }
+}
+
+// MARK: - LLM JSON Types
+
+/// Structure for LLM-generated JSON data
+struct LLMGenerationData: Codable {
+    let schemaVersion: String
+    let generationConfig: SampleGenerationConfig?
+    let samples: [[String: Any]]?
+    
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case generationConfig = "generation_config"
+        case samples
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decode(String.self, forKey: .schemaVersion)
+        generationConfig = try container.decodeIfPresent(SampleGenerationConfig.self, forKey: .generationConfig)
+        
+        // Decode samples as array of dictionaries
+        if let samplesArray = try? container.decode([[String: AnyCodable]].self, forKey: .samples) {
+            samples = samplesArray.map { dict in
+                dict.mapValues { $0.value }
+            }
+        } else {
+            samples = nil
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encodeIfPresent(generationConfig, forKey: .generationConfig)
+        
+        if let samples = samples {
+            let codableSamples = samples.map { dict in
+                dict.mapValues { AnyCodable($0) }
+            }
+            try container.encode(codableSamples, forKey: .samples)
+        }
+    }
+}
+
+/// Helper for encoding/decoding Any values
+struct AnyCodable: Codable {
+    let value: Any
+    
+    init(_ value: Any) {
+        self.value = value
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if let intValue = try? container.decode(Int.self) {
+            value = intValue
+        } else if let doubleValue = try? container.decode(Double.self) {
+            value = doubleValue
+        } else if let stringValue = try? container.decode(String.self) {
+            value = stringValue
+        } else if let boolValue = try? container.decode(Bool.self) {
+            value = boolValue
+        } else if let arrayValue = try? container.decode([AnyCodable].self) {
+            value = arrayValue.map { $0.value }
+        } else if let dictValue = try? container.decode([String: AnyCodable].self) {
+            value = dictValue.mapValues { $0.value }
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported type")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch value {
+        case let intValue as Int:
+            try container.encode(intValue)
+        case let doubleValue as Double:
+            try container.encode(doubleValue)
+        case let stringValue as String:
+            try container.encode(stringValue)
+        case let boolValue as Bool:
+            try container.encode(boolValue)
+        case let arrayValue as [Any]:
+            try container.encode(arrayValue.map { AnyCodable($0) })
+        case let dictValue as [String: Any]:
+            try container.encode(dictValue.mapValues { AnyCodable($0) })
+        default:
+            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [], debugDescription: "Unsupported type"))
+        }
+    }
+}
+
+// MARK: - LLM JSON Errors
+
+enum LLMJSONError: Error, LocalizedError {
+    case unsupportedSchemaVersion(String)
+    case missingRequiredField(String)
+    case invalidValue(String)
+    case physiologicallyImpossible(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedSchemaVersion(let version):
+            return "Unsupported schema version: \(version). Expected 1.0"
+        case .missingRequiredField(let field):
+            return "Missing required field: \(field)"
+        case .invalidValue(let message):
+            return "Invalid value: \(message)"
+        case .physiologicallyImpossible(let message):
+            return "Physiologically impossible: \(message)"
+        }
     }
 }

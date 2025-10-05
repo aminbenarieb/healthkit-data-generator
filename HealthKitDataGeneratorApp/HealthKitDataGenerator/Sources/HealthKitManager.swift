@@ -61,7 +61,7 @@ class HealthKitManager: ObservableObject {
         }
     }
     
-    func generateHealthData(count: Int) {
+    func generateHealthData(count: Int, profile: HealthProfile = .balanced) {
         guard !isGeneratingInProgress else { return }
         
         isGeneratingInProgress = true
@@ -71,18 +71,80 @@ class HealthKitManager: ObservableObject {
                 let hkGenerator = HealthKitDataGenerator(healthStore: healthStore)
                 let shareTypes = HealthKitConstants.authorizationWriteTypes()
                 
-                // Generate all samples with all data types included
-                try hkGenerator.generateAndPopulate(samplesTypes: shareTypes, numberOfDays: count, includeBasalCalories: true)
+                // Create configuration with selected profile
+                let config = SampleGenerationConfig(
+                    profile: profile,
+                    dateRange: .lastDays(count)
+                )
+                
+                // Generate all samples with config
+                try hkGenerator.generateAndPopulate(samplesTypes: shareTypes, config: config)
                 
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.info("Health data generation completed with \(count) days")
+                Self.logger.info("Health data generation completed with \(count) days using \(profile.name) profile")
             } catch {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
                 Self.logger.error("Health data generation failed: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func generateHealthData(config: SampleGenerationConfig) {
+        guard !isGeneratingInProgress else { return }
+        
+        isGeneratingInProgress = true
+        
+        Task {
+            do {
+                let hkGenerator = HealthKitDataGenerator(healthStore: healthStore)
+                let shareTypes = HealthKitConstants.authorizationWriteTypes()
+                
+                try hkGenerator.generateAndPopulate(samplesTypes: shareTypes, config: config)
+                
+                await MainActor.run { [weak self] in
+                    self?.isGeneratingInProgress = false
+                }
+                Self.logger.info("Health data generation completed using custom config")
+            } catch {
+                await MainActor.run { [weak self] in
+                    self?.isGeneratingInProgress = false
+                }
+                Self.logger.error("Health data generation failed: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func importFromJSON(_ jsonString: String) {
+        guard !isGeneratingInProgress else { return }
+        
+        isGeneratingInProgress = true
+        
+        Task {
+            do {
+                let hkGenerator = HealthKitDataGenerator(healthStore: healthStore)
+                
+                // Validate first
+                let isValid = try hkGenerator.validateLLMJSON(jsonString)
+                guard isValid else {
+                    throw NSError(domain: "HealthKitManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
+                }
+                
+                // Import
+                try hkGenerator.importFromLLMJSON(jsonString)
+                
+                await MainActor.run { [weak self] in
+                    self?.isGeneratingInProgress = false
+                }
+                Self.logger.info("Successfully imported data from JSON")
+            } catch {
+                await MainActor.run { [weak self] in
+                    self?.isGeneratingInProgress = false
+                }
+                Self.logger.error("JSON import failed: \(error.localizedDescription)")
             }
         }
     }

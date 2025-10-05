@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct HealthKitDataGeneratorAppApp: App {
+struct HealthKitDataGeneratorApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
