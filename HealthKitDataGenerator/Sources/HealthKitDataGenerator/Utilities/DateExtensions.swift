@@ -4,16 +4,15 @@ import Foundation
 // MARK: - Date Formatting Extensions
 
 public enum DateFormat {
-    case isoDateTimeSeconds
+    case iso8601
 }
 
 extension Date {
     public func string(_ format: DateFormat) -> String {
-        let formatter = DateFormatter()
+        let formatter: DateFormatter
         switch format {
-        case .isoDateTimeSeconds:
-            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        case .iso8601:
+            formatter = .iso8601
         }
         return formatter.string(from: self)
     }
@@ -21,11 +20,10 @@ extension Date {
 
 extension String {
     public func date(_ format: DateFormat) throws -> Date {
-        let formatter = DateFormatter()
+        let formatter: DateFormatter
         switch format {
-        case .isoDateTimeSeconds:
-            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        case .iso8601:
+            formatter = .iso8601
         }
         
         guard let date = formatter.date(from: self) else {

@@ -1,9 +1,12 @@
 
 import Foundation
 import HealthKit
+import Logging
 
 /// Generates realistic sample health data using configuration profiles
 public class SampleDataGenerator {
+    
+    private static let logger = AppLogger.generation
     
     // MARK: - Public Methods
     
@@ -11,24 +14,44 @@ public class SampleDataGenerator {
     /// - Parameter config: Configuration specifying profile, date range, and metrics
     /// - Returns: Dictionary containing generated sample data
     public static func generateSamples(config: SampleGenerationConfig) -> [String: Any] {
+        logger.info("🎯 Starting sample generation", metadata: [
+            "profile": "\(config.profile.name)",
+            "startDate": "\(config.dateRange.startDate.formatted())",
+            "endDate": "\(config.dateRange.endDate.formatted())",
+            "days": "\(config.dateRange.numberOfDays)",
+            "metrics": "\(config.metricsToGenerate.count)",
+            "pattern": "\(config.pattern.rawValue)"
+        ])
+        
         var result: [String: Any] = [:]
         let calendar = Calendar.current
+        var totalSamplesGenerated = 0
+        var daysProcessed = 0
         
         // Set random seed if provided for reproducibility
         if let seed = config.randomSeed {
             srand48(seed)
+            logger.debug("Using random seed for reproducibility", metadata: ["seed": "\(seed)"])
         }
         
         // Generate samples for each day in the range
-        for dayOffset in 0..<config.dateRange.numberOfDays {
-            guard let dayDate = calendar.date(byAdding: .day, value: -dayOffset, to: config.dateRange.endDate) else {
+        for dayOffset in 0...config.dateRange.numberOfDays {
+            guard let dayDate = calendar.date(byAdding: .day, value: dayOffset, to: config.dateRange.startDate) else {
+                logger.warning("Failed to calculate date", metadata: ["offset": "\(dayOffset)"])
                 continue
             }
             
             // Check if we should generate for this day based on pattern
             guard config.pattern.shouldGenerateForDay(dayDate) else {
+                logger.debug("Skipping day based on pattern", metadata: [
+                    "date": "\(dayDate.formatted())",
+                    "pattern": "\(config.pattern.rawValue)"
+                ])
                 continue
             }
+            
+            daysProcessed += 1
+            var daySamples = 0
             
             // Generate each requested metric
             for metric in config.metricsToGenerate {
@@ -39,6 +62,15 @@ public class SampleDataGenerator {
                     config: config
                 )
                 
+                if !samples.isEmpty {
+                    logger.debug("Generated metric samples", metadata: [
+                        "metric": "\(metric.rawValue)",
+                        "date": "\(dayDate.formatted(date: .abbreviated, time: .omitted))",
+                        "count": "\(samples.count)"
+                    ])
+                    daySamples += samples.count
+                }
+                
                 let key = metric.healthKitIdentifier
                 if var existing = result[key] as? [[String: Any]] {
                     existing.append(contentsOf: samples)
@@ -47,7 +79,22 @@ public class SampleDataGenerator {
                     result[key] = samples
                 }
             }
+            
+            totalSamplesGenerated += daySamples
+            
+            if daySamples > 0 {
+                logger.debug("Day complete", metadata: [
+                    "date": "\(dayDate.formatted(date: .abbreviated, time: .omitted))",
+                    "samples": "\(daySamples)"
+                ])
+            }
         }
+        
+        logger.info("✅ Sample generation complete", metadata: [
+            "daysProcessed": "\(daysProcessed)",
+            "totalSamples": "\(totalSamplesGenerated)",
+            "metricTypes": "\(result.keys.count)"
+        ])
         
         return result
     }
@@ -201,7 +248,7 @@ public class SampleDataGenerator {
         
         // Calculate sleep duration
         let sleepDuration = Double.random(in: profile.sleepDurationRange)
-        let bedtimeHour = Int.random(in: profile.bedtimeRange)
+        let bedtimeHour = Int.random(in: profile.bedtimeRange) % 24
         
         // Sleep start time (previous day if bedtime is late)
         var sleepStart: Date

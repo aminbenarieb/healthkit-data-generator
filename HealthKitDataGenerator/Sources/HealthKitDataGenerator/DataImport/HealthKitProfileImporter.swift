@@ -1,6 +1,7 @@
 
 import Foundation
 import HealthKit
+import Logging
 
 // MARK: - Import Errors
 
@@ -80,9 +81,17 @@ open class HealthKitProfileImporter {
 
                         self.healthStore.save(sample, withCompletion: {
                             (success:Bool, error:Error?) in
-                            /// TODO success error handling print(success, error)
                             if !success {
-                                print(error)
+                                if let error = error {
+                                    AppLogger.healthKit.error("Failed to save sample", metadata: [
+                                        "error": "\(error.localizedDescription)",
+                                        "sampleType": "\(sample.sampleType)"
+                                    ])
+                                }
+                            } else {
+                                AppLogger.healthKit.debug("Saved sample", metadata: [
+                                    "sampleType": "\(sample.sampleType)"
+                                ])
                             }
 
                         })
@@ -95,4 +104,5 @@ open class HealthKitProfileImporter {
             }
     }
 }
+
 

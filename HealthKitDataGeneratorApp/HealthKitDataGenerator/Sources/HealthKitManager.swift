@@ -1,11 +1,12 @@
 import HealthKit
 import HealthKitDataGenerator
-import OSLog
+import Logging
 
 class HealthKitManager: ObservableObject {
     static let shared = HealthKitManager()
     
-    private static let logger = Logger(subsystem: "HealthKitDataGeneratorApp", category: "HealthKitManager")
+    private let logger = AppUILogger.userAction
+    private let authLogger = AppUILogger.authorization
     
     let healthStore = HKHealthStore()
     
@@ -18,8 +19,10 @@ class HealthKitManager: ObservableObject {
     private init() {}
     
     func requestAuthorization() async {
+        authLogger.info("Requesting HealthKit authorization")
+        
         guard HKHealthStore.isHealthDataAvailable() else {
-            Self.logger.error("HealthKit is not available on this device")
+            authLogger.error("HealthKit is not available on this device")
             return
         }
         
@@ -31,14 +34,21 @@ class HealthKitManager: ObservableObject {
             await MainActor.run { [weak self] in
                 self?.isAuthorized = true
             }
-            Self.logger.info("HealthKit authorization granted")
+            authLogger.info("✅ HealthKit authorization granted", metadata: [
+                "readTypes": "\(readTypes.count)",
+                "writeTypes": "\(writeTypes.count)"
+            ])
         } catch {
-            Self.logger.error("HealthKit authorization failed: \(error.localizedDescription)")
+            authLogger.error("❌ HealthKit authorization failed", metadata: [
+                "error": "\(error.localizedDescription)"
+            ])
         }
     }
     
     func cleanHealthData() {
         guard !isCleaningInProgress else { return }
+        
+        logger.info("🧹 Starting HealthKit data cleanup")
         
         isCleaningInProgress = true
         cleaningMessage = "Starting cleanup..."
@@ -49,7 +59,10 @@ class HealthKitManager: ObservableObject {
                 DispatchQueue.main.async { [weak self] in
                     self?.cleaningMessage = message
                     self?.cleaningProgress = progress
-                    Self.logger.debug("HealthKitStoreCleaner \(String(describing: progress)) progress - \(message)")
+                    self?.logger.debug("Cleanup progress", metadata: [
+                        "progress": "\(String(describing: progress))",
+                        "message": "\(message)"
+                    ])
                 }
             }
             
@@ -57,12 +70,21 @@ class HealthKitManager: ObservableObject {
                 self?.isCleaningInProgress = false
                 self?.cleaningMessage = "Cleanup completed"
                 self?.cleaningProgress = 1.0
+                self?.logger.info("✅ Cleanup completed")
             }
         }
     }
     
-    func generateHealthData(count: Int, profile: HealthProfile = .balanced) {
-        guard !isGeneratingInProgress else { return }
+    func generateHealthData(count: UInt, profile: HealthProfile = .balanced) {
+        guard !isGeneratingInProgress else {
+            logger.warning("Generation already in progress, ignoring request")
+            return
+        }
+        
+        logger.info("🎯 User initiated generation", metadata: [
+            "days": "\(count)",
+            "profile": "\(profile.name)"
+        ])
         
         isGeneratingInProgress = true
         
@@ -83,18 +105,31 @@ class HealthKitManager: ObservableObject {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.info("Health data generation completed with \(count) days using \(profile.name) profile")
+                logger.info("✅ Health data generation completed", metadata: [
+                    "days": "\(count)",
+                    "profile": "\(profile.name)"
+                ])
             } catch {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.error("Health data generation failed: \(error.localizedDescription)")
+                logger.error("❌ Health data generation failed", metadata: [
+                    "error": "\(error.localizedDescription)"
+                ])
             }
         }
     }
     
     func generateHealthData(config: SampleGenerationConfig) {
-        guard !isGeneratingInProgress else { return }
+        guard !isGeneratingInProgress else {
+            logger.warning("Generation already in progress, ignoring request")
+            return
+        }
+        
+        logger.info("🎯 User initiated custom config generation", metadata: [
+            "profile": "\(config.profile.name)",
+            "days": "\(config.dateRange.numberOfDays)"
+        ])
         
         isGeneratingInProgress = true
         
@@ -108,18 +143,27 @@ class HealthKitManager: ObservableObject {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.info("Health data generation completed using custom config")
+                logger.info("✅ Custom config generation completed")
             } catch {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.error("Health data generation failed: \(error.localizedDescription)")
+                logger.error("❌ Custom config generation failed", metadata: [
+                    "error": "\(error.localizedDescription)"
+                ])
             }
         }
     }
     
     func importFromJSON(_ jsonString: String) {
-        guard !isGeneratingInProgress else { return }
+        guard !isGeneratingInProgress else {
+            logger.warning("Generation already in progress, ignoring JSON import")
+            return
+        }
+        
+        logger.info("📥 User initiated JSON import", metadata: [
+            "jsonLength": "\(jsonString.count)"
+        ])
         
         isGeneratingInProgress = true
         
@@ -128,6 +172,7 @@ class HealthKitManager: ObservableObject {
                 let hkGenerator = HealthKitDataGenerator(healthStore: healthStore)
                 
                 // Validate first
+                logger.debug("Validating JSON before import")
                 let isValid = try hkGenerator.validateLLMJSON(jsonString)
                 guard isValid else {
                     throw NSError(domain: "HealthKitManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON"])
@@ -139,12 +184,14 @@ class HealthKitManager: ObservableObject {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.info("Successfully imported data from JSON")
+                logger.info("✅ Successfully imported data from JSON")
             } catch {
                 await MainActor.run { [weak self] in
                     self?.isGeneratingInProgress = false
                 }
-                Self.logger.error("JSON import failed: \(error.localizedDescription)")
+                logger.error("❌ JSON import failed", metadata: [
+                    "error": "\(error.localizedDescription)"
+                ])
             }
         }
     }

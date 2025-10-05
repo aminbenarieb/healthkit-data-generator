@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import Logging
 
 // MARK: - Sample Creator Registry
 
@@ -28,7 +29,9 @@ public class SampleCreatorRegistry {
                 sampleCreator = HeartbeatSeriesSampleCreator(healthStore: healthStore)
             }
             else {
-                print("unsupported", typeName)
+                AppLogger.general.warning("Unsupported sample type", metadata: [
+                    "typeName": "\(typeName ?? "nil")"
+                ])
             }
         }
         return sampleCreator
@@ -62,7 +65,7 @@ extension SampleCreator {
 		if let timestamp = dict[HealthKitConstants.S_DATE] as? Double {
 			startDate = Date(timeIntervalSince1970: timestamp / 1000)
 		} else if let stringDate = dict[HealthKitConstants.S_DATE] as? String {
-            startDate = (try? stringDate.date(.isoDateTimeSeconds)) ?? Date()
+            startDate = (try? stringDate.date(.iso8601)) ?? Date()
 		} else {
 			startDate = Date()
 		}
@@ -71,7 +74,7 @@ extension SampleCreator {
 		if let timestamp = dict[HealthKitConstants.E_DATE] as? Double {
 			endDate = Date(timeIntervalSince1970: timestamp / 1000)
 		} else if let stringDate = dict[HealthKitConstants.E_DATE] as? String {
-			endDate = (try? stringDate.date(.isoDateTimeSeconds)) ?? Date()
+			endDate = (try? stringDate.date(.iso8601)) ?? Date()
 		} else {
 			endDate = startDate
 		}
@@ -192,11 +195,10 @@ class WorkoutSampleCreator : SampleCreator {
 
     func createSample(_ sampleDict: AnyObject) -> HKSample? {
 
-        if let dict = sampleDict as? Dictionary<String, AnyObject> {
+        if let dict = sampleDict as? Dictionary<String, AnyObject>,
+            let activityTypeRawValue = dict[HealthKitConstants.WORKOUT_ACTIVITY_TYPE] as? UInt,
+            let activityType = HKWorkoutActivityType(rawValue: activityTypeRawValue) {
             let dates = dictToTimeframe(dict)
-
-            let activityTypeRawValue = dict[HealthKitConstants.WORKOUT_ACTIVITY_TYPE] as? UInt
-            let activityType = HKWorkoutActivityType(rawValue: activityTypeRawValue!)
 
             let duration = dict[HealthKitConstants.DURATION] as? TimeInterval
             let totalDistance = dict[HealthKitConstants.TOTAL_DISTANCE] as? Double // always HKUnit.meterUnit()
@@ -214,10 +216,30 @@ class WorkoutSampleCreator : SampleCreator {
                     }
                 }
             }
+            // Create optional quantities
+            let energyQuantity = totalEnergyBurned.map { HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: $0) }
+            let distanceQuantity = totalDistance.map { HKQuantity(unit: HKUnit.meter(), doubleValue: $0) }
+            
             if events.count > 0 {
-                return HKWorkout(activityType: activityType!, start: dates.sDate, end: dates.eDate, workoutEvents: events, totalEnergyBurned: HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: totalEnergyBurned!), totalDistance: HKQuantity(unit: HKUnit.meter(), doubleValue: totalDistance!), metadata: nil)
+                return HKWorkout(
+                    activityType: activityType,
+                    start: dates.sDate,
+                    end: dates.eDate,
+                    workoutEvents: events,
+                    totalEnergyBurned: energyQuantity,
+                    totalDistance: distanceQuantity,
+                    metadata: nil
+                )
             } else {
-                return HKWorkout(activityType: activityType!, start: dates.sDate, end: dates.eDate, duration: duration!, totalEnergyBurned: HKQuantity(unit: HKUnit.kilocalorie(), doubleValue: totalEnergyBurned!), totalDistance: HKQuantity(unit: HKUnit.meter(), doubleValue: totalDistance!), metadata: nil)
+                return HKWorkout(
+                    activityType: activityType,
+                    start: dates.sDate,
+                    end: dates.eDate,
+                    duration: duration ?? 0,
+                    totalEnergyBurned: energyQuantity,
+                    totalDistance: distanceQuantity,
+                    metadata: nil
+                )
             }
         }
         return nil
@@ -240,13 +262,13 @@ class HeartbeatSeriesSampleCreator: SampleCreator {
               let endString   = dict["edate"] as? String,
               let heartbeats  = dict["heartbeats"] as? [[String: Any]]
         else {
-            print("HeartbeatSeriesSampleCreator: invalid dictionary structure")
+            AppLogger.dataImport.error("Invalid heartbeat series dictionary structure")
             return nil
         }
 
         // 2️⃣ Parse dates
-        let startDate = (try? startString.date(.isoDateTimeSeconds)) ?? Date()
-        let endDate   = (try? endString.date(.isoDateTimeSeconds)) ?? startDate
+        let startDate = (try? startString.date(.iso8601)) ?? Date()
+        let endDate   = (try? endString.date(.iso8601)) ?? startDate
 
         // 3️⃣ Create the builder
         let builder = HKHeartbeatSeriesBuilder(healthStore: healthStore, device: nil, start: startDate)
@@ -265,10 +287,12 @@ class HeartbeatSeriesSampleCreator: SampleCreator {
                 sinceSeriesStartDate: offset,
                 precededByGap: precededByGap) { success, error in
                     if let error {
-                        print("Error during addHeartbeatWithTimeInterval: \(error.localizedDescription)")
+                        AppLogger.healthKit.error("Failed to add heartbeat", metadata: [
+                            "error": "\(error.localizedDescription)"
+                        ])
                     }
                     guard success else {
-                        print("Failed to add addHeartbeatWithTimeInterval")
+                        AppLogger.healthKit.warning("Failed to add heartbeat interval")
                         return
                     }
                 }
@@ -292,7 +316,9 @@ class HeartbeatSeriesSampleCreator: SampleCreator {
 
         // 6️⃣ Check error and return the created sample
         if let err = finishError {
-            print("HeartbeatSeriesSampleCreator: error finishing builder –", err.localizedDescription)
+            AppLogger.healthKit.error("Failed to finish heartbeat series builder", metadata: [
+                "error": "\(err.localizedDescription)"
+            ])
             return nil
         }
         if let sample = resultSample {

@@ -1,10 +1,12 @@
 import Foundation
 import HealthKit
+import Logging
 
 /// Main class for generating and populating HealthKit data
 final public class HealthKitDataGenerator {
 
     private let healthStore: HKHealthStore
+    private let logger = AppLogger.generation
     
     public init(healthStore: HKHealthStore) {
         self.healthStore = healthStore
@@ -15,8 +17,16 @@ final public class HealthKitDataGenerator {
     ///   - samplesTypes: Set of sample types to populate
     ///   - config: Configuration specifying profile, date range, and metrics
     public func generateAndPopulate(samplesTypes: Set<HKSampleType>, config: SampleGenerationConfig) throws {
+        logger.logGenerationStart(days: config.dateRange.numberOfDays, profile: config.profile.name)
+        
         let generatedSamples = SampleDataGenerator.generateSamples(config: config)
+        
+        let totalSamples = generatedSamples.values.compactMap { $0 as? [[String: Any]] }.reduce(0) { $0 + $1.count }
+        logger.info("Generated samples", metadata: ["total": "\(totalSamples)", "types": "\(generatedSamples.keys.count)"])
+        
         try populate(samplesTypes: samplesTypes, generatedSamples: generatedSamples)
+        
+        logger.logGenerationComplete(days: config.dateRange.numberOfDays, samplesGenerated: totalSamples)
     }
     
     /// Generates samples based on configuration without populating HealthKit
@@ -29,14 +39,18 @@ final public class HealthKitDataGenerator {
     /// Imports data from LLM-generated JSON
     /// - Parameter jsonString: JSON string conforming to LLM schema
     public func importFromLLMJSON(_ jsonString: String) throws {
+        AppLogger.llm.logImportStart(source: "LLM JSON")
+        
         let data = jsonString.data(using: .utf8)!
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
         let llmData = try decoder.decode(LLMGenerationData.self, from: data)
+        AppLogger.llm.info("Decoded LLM data", metadata: ["version": "\(llmData.schemaVersion)"])
         
         // If generation_config is provided, generate samples
         if let config = llmData.generationConfig {
+            AppLogger.llm.info("Using generation config", metadata: ["profile": "\(config.profile.name)"])
             let samples = SampleDataGenerator.generateSamples(config: config)
             let allTypes = HealthKitConstants.authorizationWriteTypes()
             try populate(samplesTypes: allTypes, generatedSamples: samples)
@@ -44,14 +58,19 @@ final public class HealthKitDataGenerator {
         
         // If direct samples are provided, import them
         if let directSamples = llmData.samples {
+            AppLogger.llm.info("Importing direct samples", metadata: ["count": "\(directSamples.count)"])
             try importDirectSamples(directSamples)
         }
+        
+        AppLogger.llm.logImportComplete(samplesImported: 0) // TODO: track actual count
     }
     
     /// Validates LLM-generated JSON
     /// - Parameter jsonString: JSON string to validate
     /// - Returns: True if valid, throws error if invalid
     public func validateLLMJSON(_ jsonString: String) throws -> Bool {
+        AppLogger.validation.info("Validating LLM JSON")
+        
         let data = jsonString.data(using: .utf8)!
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -60,11 +79,13 @@ final public class HealthKitDataGenerator {
         
         // Validate schema version
         guard llmData.schemaVersion == "1.0" else {
+            AppLogger.validation.error("Invalid schema version", metadata: ["version": "\(llmData.schemaVersion)"])
             throw LLMJSONError.unsupportedSchemaVersion(llmData.schemaVersion)
         }
         
         // Validate that at least one of config or samples is provided
         guard llmData.generationConfig != nil || llmData.samples != nil else {
+            AppLogger.validation.error("Missing required fields")
             throw LLMJSONError.missingRequiredField("Either generation_config or samples must be provided")
         }
         
@@ -73,6 +94,7 @@ final public class HealthKitDataGenerator {
             try validateConfig(config)
         }
         
+        AppLogger.validation.logValidation(isValid: true, message: "LLM JSON is valid")
         return true
     }
         
@@ -85,26 +107,56 @@ final public class HealthKitDataGenerator {
                                                     options: .withoutEscapingSlashes)
         let resultString = String(data: resultJson, encoding: .utf8)!
 
+        AppLogger.healthKit.info("Starting to populate HealthKit", metadata: [
+            "sampleTypes": "\(samplesTypes.count)",
+            "metricTypes": "\(generatedSamples.keys.count)"
+        ])
+        
         var lastSampleType = ""
+        var savedCount = 0
+        var skippedCount = 0
+        
         importSamples(text: resultString) { (sample) in
+            let sampleDate = sample.startDate.formatted(date: .abbreviated, time: .omitted)
+            
             guard samplesTypes.contains(sample.sampleType) else {
-                print("HealthKitDataGenerator: skipped \(sample.sampleType)")
+                skippedCount += 1
+                AppLogger.healthKit.debug("Skipped sample type", metadata: [
+                    "sampleType": "\(sample.sampleType)",
+                    "date": "\(sampleDate)"
+                ])
                 return
             }
+            
             if lastSampleType != String(describing: sample.sampleType) {
                 lastSampleType = String(describing: sample.sampleType)
-                print("HealthKitDataGenerator: importing \(lastSampleType)")
+                AppLogger.healthKit.info("Importing sample type", metadata: [
+                    "sampleType": "\(lastSampleType)",
+                    "date": "\(sampleDate)"
+                ])
             }
 
             self.healthStore.save(sample, withCompletion: { (success, error: Error?) in
                 if let error = error {
-                    print("HealthKitDataGenerator: \(sample.sampleType) - ", error.localizedDescription)
-                }
-                else {
-                    print("HealthKitDataGenerator: \(sample.sampleType) - ", success)
+                    AppLogger.healthKit.error("Failed to save sample", metadata: [
+                        "sampleType": "\(sample.sampleType)",
+                        "date": "\(sampleDate)",
+                        "error": "\(error.localizedDescription)"
+                    ])
+                } else {
+                    savedCount += 1
+                    AppLogger.healthKit.debug("Saved sample", metadata: [
+                        "sampleType": "\(sample.sampleType)",
+                        "date": "\(sampleDate)"
+                    ])
                 }
             })
         }
+        
+        AppLogger.healthKit.info("Populate complete", metadata: [
+            "saved": "\(savedCount)",
+            "skipped": "\(skippedCount)"
+        ])
     }
 
     // MARK: - Private Methods
@@ -140,7 +192,14 @@ final public class HealthKitDataGenerator {
         importSamples(text: jsonString) { sample in
             self.healthStore.save(sample) { success, error in
                 if let error = error {
-                    print("Error importing sample: \(error.localizedDescription)")
+                    AppLogger.healthKit.error("Failed to save sample", metadata: [
+                        "error": "\(error.localizedDescription)",
+                        "sampleType": "\(sample.sampleType)"
+                    ])
+                } else {
+                    AppLogger.healthKit.debug("Saved sample", metadata: [
+                        "sampleType": "\(sample.sampleType)"
+                    ])
                 }
             }
         }

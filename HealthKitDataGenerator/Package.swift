@@ -16,6 +16,7 @@ let package = Package(
             targets: ["HealthKitDataGenerator"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -23,6 +24,7 @@ let package = Package(
         .target(
             name: "HealthKitDataGenerator",
             dependencies: [
+                .product(name: "Logging", package: "swift-log")
             ]),
         .testTarget(
             name: "HealthKitDataGeneratorTests",

@@ -57,9 +57,9 @@ public struct DateRange: Codable {
     }
     
     /// Create a range for the last N days
-    public static func lastDays(_ days: Int) -> DateRange {
+    public static func lastDays(_ days: UInt) -> DateRange {
         let end = Date()
-        let start = Calendar.current.date(byAdding: .day, value: -days, to: end)!
+        let start = Calendar.current.date(byAdding: .day, value: min(0, -Int(days) + 1), to: end)!
         return DateRange(startDate: start, endDate: end)
     }
     

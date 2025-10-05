@@ -245,7 +245,7 @@ extension HealthProfile {
         preferredWorkoutTypes: [.walking],
         sleepDurationRange: 6.5...8.0,
         sleepQuality: .fair,
-        bedtimeRange: 23...1,
+        bedtimeRange: 23...25,
         restingHeartRateRange: 70...80,
         maxHeartRateRange: 160...175,
         heartRateVariability: .low,

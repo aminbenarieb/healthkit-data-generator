@@ -4,7 +4,7 @@ import HealthKitDataGenerator
 
 public struct ContentView: View {
     @StateObject private var healthKitManager = HealthKitManager.shared
-    @State private var sampleCount: Int = 7
+    @State private var sampleCount: UInt = 7
     @State private var selectedProfile: HealthProfile = .balanced
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -342,7 +342,7 @@ struct JSONImportView: View {
               "preferredWorkoutTypes": ["running", "yoga"],
               "sleepDurationRange": {"lowerBound": 7.0, "upperBound": 8.5},
               "sleepQuality": "good",
-              "bedtimeRange": {"lowerBound": 22, "upperBound": 23},
+              "bedtimeRange": {"lowerBound": 21, "upperBound": 26},
               "restingHeartRateRange": {"lowerBound": 60, "upperBound": 70},
               "maxHeartRateRange": {"lowerBound": 170, "upperBound": 185},
               "heartRateVariability": "moderate",

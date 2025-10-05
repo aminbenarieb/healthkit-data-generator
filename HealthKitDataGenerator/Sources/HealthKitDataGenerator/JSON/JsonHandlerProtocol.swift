@@ -1,5 +1,6 @@
 
 import Foundation
+import Logging
 
 // MARK: - JSON Handler Protocol
 
@@ -162,7 +163,7 @@ public class SampleOutputJsonHandler: JsonHandlerProtocol {
             outString += " "
         }
         outString += string
-        print(outString)
+        AppLogger.general.debug("JSON handler output", metadata: ["level": "\(level)", "content": "\(outString)"])
     }
 
     /// callback for every found HealthKitSample
