@@ -78,12 +78,16 @@ public class LLMManager {
     
     private func setupProviders() {
         // Register Apple Foundation Model provider
-        let provider = AppleFoundationModelProvider()
-        logger.debug("Setting up providers", metadata: [
-            "provider": "\(provider.identifier)",
-            "isAvailable": "\(provider.isAvailable)"
-        ])
-        register(provider)
+        if #available(iOS 26.0, *) {
+            let provider = AppleFoundationModelProvider()
+            logger.debug("Setting up providers", metadata: [
+                "provider": "\(provider.identifier)",
+                "isAvailable": "\(provider.isAvailable)"
+            ])
+            register(provider)
+        } else {
+            // Fallback on earlier versions
+        }
         
         // TODO: Register other providers as they become available
         // register(OpenAIProvider())

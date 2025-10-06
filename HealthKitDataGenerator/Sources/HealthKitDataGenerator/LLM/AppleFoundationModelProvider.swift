@@ -1,9 +1,11 @@
 import Foundation
-import Loggingimport FoundationModels
+import Logging
+import FoundationModels
 
 // MARK: - Apple Foundation Model Provider
 
 /// Apple Foundation Model provider implementation using the real FoundationModels framework
+@available(iOS 26.0, *)
 public class AppleFoundationModelProvider: LLMProvider {
     
     private let logger = AppLogger.llm
@@ -105,7 +107,7 @@ public class AppleFoundationModelProvider: LLMProvider {
             var fullResponse = ""
             
             for try await partialResponse in stream {
-                fullResponse += partialResponse
+                fullResponse += partialResponse.content
             }
             
             logger.info("Successfully generated streaming response", metadata: [
