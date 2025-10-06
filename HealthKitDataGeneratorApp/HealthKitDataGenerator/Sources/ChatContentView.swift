@@ -46,6 +46,10 @@ public struct ChatContentView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     
+    // LLM Availability
+    @State private var llmManager = LLMManager()
+    @State private var hasAvailableProviders = false
+    
     // Manual Mode State
     @State private var sampleCount: UInt = 7
     @State private var selectedProfile: HealthProfile = .balanced
@@ -68,14 +72,19 @@ public struct ChatContentView: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Mode Selector
-                modeSelector
+                // Mode Selector (only show if AI providers are available)
+                if hasAvailableProviders {
+                    modeSelector
+                }
                 
                 // Content based on selected mode
                 if selectedMode == .manual {
                     manualModeView
-                } else {
+                } else if hasAvailableProviders {
                     llmModeView
+                } else {
+                    // Show AI unavailable message in manual mode
+                    aiUnavailableView
                 }
             }
             .navigationTitle("HealthKit Data Generator")
@@ -87,6 +96,14 @@ public struct ChatContentView: View {
             }
             .sheet(isPresented: $showingJSONImport) {
                 JSONImportView()
+            }
+            .onAppear {
+                checkProviderAvailability()
+            }
+            .task {
+                if HKHealthStore.isHealthDataAvailable() && !healthKitManager.isAuthorized {
+                    await healthKitManager.requestAuthorization()
+                }
             }
         }
     }
@@ -130,6 +147,9 @@ public struct ChatContentView: View {
                 // Header
                 headerSection
                 
+                // Authorization Status
+                authorizationSection
+                
                 // Profile Selection
                 profileSection
                 
@@ -147,6 +167,9 @@ public struct ChatContentView: View {
                 
                 // Generate Button
                 generateButton
+                
+                // Clean Data Button
+                cleanDataButton
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
@@ -188,6 +211,16 @@ public struct ChatContentView: View {
             
             // Chat Input
             chatInputSection
+            
+            // Clean Data Button (for LLM mode)
+            if !chatMessages.isEmpty {
+                VStack(spacing: 12) {
+                    Divider()
+                    cleanDataButton
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                }
+            }
         }
     }
     
@@ -231,27 +264,144 @@ public struct ChatContentView: View {
     private var chatInputSection: some View {
         VStack(spacing: 0) {
             Divider()
+                .background(Color.gray.opacity(0.3))
             
-            HStack(spacing: 12) {
-                TextField("Describe the health data you want to generate...", text: $currentMessage, axis: .vertical)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .lineLimit(1...4)
-                    .disabled(isGenerating)
-                
-                Button(action: sendMessage) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(currentMessage.isEmpty || isGenerating ? .gray : .blue)
+            VStack(spacing: 12) {
+                HStack(alignment: .bottom, spacing: 12) {
+                    // Text input with enhanced styling
+                    VStack(spacing: 0) {
+                        TextField("Describe the health data you want to generate...", text: $currentMessage, axis: .vertical)
+                            .font(.system(size: 16, weight: .regular))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(.systemGray6))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(
+                                                currentMessage.isEmpty ? Color.gray.opacity(0.3) : Color.blue.opacity(0.5),
+                                                lineWidth: currentMessage.isEmpty ? 1 : 2
+                                            )
+                                    )
+                            )
+                            .lineLimit(1...6)
+                            .disabled(isGenerating)
+                            .animation(.easeInOut(duration: 0.2), value: currentMessage.isEmpty)
+                        
+                        // Character count (optional)
+                        if !currentMessage.isEmpty {
+                            HStack {
+                                Spacer()
+                                Text("\(currentMessage.count) characters")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .padding(.trailing, 16)
+                                    .padding(.top, 4)
+                            }
+                        }
+                    }
+                    
+                    // Send button with enhanced styling
+                    Button(action: sendMessage) {
+                        ZStack {
+                            Circle()
+                                .fill(currentMessage.isEmpty || isGenerating ? Color.gray.opacity(0.3) : Color.blue)
+                                .frame(width: 44, height: 44)
+                            
+                            if isGenerating {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }
+                    .disabled(currentMessage.isEmpty || isGenerating)
+                    .scaleEffect(currentMessage.isEmpty ? 0.9 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: currentMessage.isEmpty)
                 }
-                .disabled(currentMessage.isEmpty || isGenerating)
+                
+                // Quick action buttons
+                if currentMessage.isEmpty {
+                    HStack(spacing: 8) {
+                        ForEach(quickActions, id: \.self) { action in
+                            Button(action: {
+                                currentMessage = action
+                            }) {
+                                Text(action)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemBackground))
+            .padding(.vertical, 16)
+            .background(
+                Color(.systemBackground)
+                    .shadow(color: .black.opacity(0.05), radius: 1, x: 0, y: -1)
+            )
         }
     }
     
+    private var quickActions: [String] {
+        [
+            "Generate 2 weeks of marathon training data",
+            "Create recovery data for an injured athlete",
+            "Make weight loss progress data for 30 days"
+        ]
+    }
+    
     // MARK: - Manual Mode Sections (Preserved from original)
+    
+    private var authorizationSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: healthKitManager.isAuthorized ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .foregroundColor(healthKitManager.isAuthorized ? .green : .orange)
+                
+                Text(healthKitManager.isAuthorized ? "HealthKit Authorized" : "HealthKit Authorization Required")
+                    .font(.headline)
+                
+                Spacer()
+            }
+            .padding()
+            .background(.regularMaterial)
+            .cornerRadius(12)
+            
+            if !healthKitManager.isAuthorized {
+                Button(action: {
+                    Task {
+                        await healthKitManager.requestAuthorization()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "heart.text.square")
+                        Text("Request HealthKit Permission")
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue.gradient)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+            }
+        }
+    }
     
     private var headerSection: some View {
         VStack(spacing: 12) {
@@ -263,6 +413,17 @@ public struct ChatContentView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+            
+            if hasAvailableProviders {
+                HStack {
+                    Image(systemName: "brain.head.profile")
+                        .foregroundColor(.blue)
+                    Text("AI Chat mode also available")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
+            }
         }
         .padding(.top, 8)
     }
@@ -283,7 +444,7 @@ public struct ChatContentView: View {
                                     .fontWeight(.medium)
                                 Text(profile.description)
                                     .font(.caption2)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(selectedProfile.id == profile.id ? .white.opacity(0.8) : .secondary)
                                     .multilineTextAlignment(.center)
                             }
                             .padding(.horizontal, 12)
@@ -291,6 +452,10 @@ public struct ChatContentView: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(selectedProfile.id == profile.id ? Color.blue : Color.gray.opacity(0.2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(selectedProfile.id == profile.id ? Color.blue : Color.clear, lineWidth: 2)
+                                    )
                             )
                             .foregroundColor(selectedProfile.id == profile.id ? .white : .primary)
                         }
@@ -443,9 +608,9 @@ public struct ChatContentView: View {
                         .fill(Color.blue)
                 )
             }
-            .disabled(healthKitManager.isGenerating)
+            .disabled(healthKitManager.isGeneratingInProgress)
             
-            if healthKitManager.isGenerating {
+            if healthKitManager.isGeneratingInProgress {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)
@@ -455,6 +620,123 @@ public struct ChatContentView: View {
                 }
             }
         }
+    }
+    
+    private var cleanDataButton: some View {
+        VStack(spacing: 12) {
+            Button(action: {
+                healthKitManager.cleanHealthData()
+            }) {
+                HStack {
+                    if healthKitManager.isCleaningInProgress {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "trash.circle.fill")
+                            .font(.system(size: 18))
+                    }
+                    Text(healthKitManager.isCleaningInProgress ? "Cleaning..." : "Clean Health Data")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(healthKitManager.isCleaningInProgress ? Color.gray : Color.red)
+                )
+            }
+            .disabled(healthKitManager.isCleaningInProgress)
+            
+            // Cleaning Progress
+            if healthKitManager.isCleaningInProgress {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Cleaning Progress")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    if let progress = healthKitManager.cleaningProgress {
+                        ProgressView(value: progress)
+                            .progressViewStyle(LinearProgressViewStyle())
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(LinearProgressViewStyle())
+                    }
+                    
+                    Text(healthKitManager.cleaningMessage)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(.regularMaterial)
+                .cornerRadius(12)
+            }
+        }
+    }
+    
+    // MARK: - Provider Availability
+    
+    private func checkProviderAvailability() {
+        let availableProviders = llmManager.availableProviders()
+        hasAvailableProviders = !availableProviders.isEmpty
+        
+        // If no AI providers available, ensure we're in manual mode
+        if !hasAvailableProviders {
+            selectedMode = .manual
+        }
+    }
+    
+    // MARK: - AI Unavailable View
+    
+    private var aiUnavailableView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            VStack(spacing: 16) {
+                Image(systemName: "brain.head.profile.slash")
+                    .font(.system(size: 64))
+                    .foregroundColor(.orange)
+                
+                Text("AI Chat Unavailable")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("AI-powered health data generation is not available on this device. This feature requires iOS 18+ with Apple Intelligence support.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                
+                VStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Manual generation is fully available")
+                            .font(.subheadline)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("All health profiles and patterns work")
+                            .font(.subheadline)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Clean data functionality included")
+                            .font(.subheadline)
+                    }
+                }
+                .padding(.top, 8)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Chat Functions
@@ -493,7 +775,7 @@ public struct ChatContentView: View {
     private func generateHealthDataWithEnhancedConfig() {
         let dateRange: DateRange
         switch selectedDateRangeType {
-        case .lastDays: dateRange = .lastDays(Int(sampleCount))
+        case .lastDays: dateRange = .lastDays(sampleCount)
         case .thisWeek: dateRange = .thisWeek()
         case .thisMonth: dateRange = .thisMonth()
         case .weekdaysOnly:
@@ -505,7 +787,7 @@ public struct ChatContentView: View {
             let startDate = Calendar.current.date(byAdding: .day, value: -Int(sampleCount), to: endDate) ?? endDate
             dateRange = .weekendsOnly(start: startDate, end: endDate)
         case .specificDates:
-            dateRange = .lastDays(Int(sampleCount)) // Placeholder, needs date picker
+            dateRange = .lastDays(sampleCount) // Placeholder, needs date picker
         }
         
         let config = SampleGenerationConfig(
@@ -526,41 +808,67 @@ struct ChatMessageView: View {
     let message: ChatMessage
     
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 8) {
             if message.isUser {
-                Spacer(minLength: 50)
-                VStack(alignment: .trailing, spacing: 4) {
+                Spacer(minLength: 60)
+                VStack(alignment: .trailing, spacing: 6) {
                     Text(message.content)
-                        .font(.body)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 14)
                         .background(
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(Color.blue)
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.blue, Color.blue.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .shadow(color: .blue.opacity(0.3), radius: 4, x: 0, y: 2)
                         )
                     Text(message.timestamp, style: .time)
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                        .padding(.trailing, 4)
                 }
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(message.content)
-                        .font(.body)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(Color.gray.opacity(0.1))
-                        )
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 8) {
+                        // AI avatar
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Image(systemName: "brain.head.profile")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.blue)
+                            )
+                        
+                        Text(message.content)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(.systemGray6))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                            )
+                    }
                     Text(message.timestamp, style: .time)
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                        .padding(.leading, 40)
                 }
-                Spacer(minLength: 50)
+                Spacer(minLength: 60)
             }
         }
+        .padding(.horizontal, 4)
     }
 }
 
@@ -570,29 +878,48 @@ struct TypingIndicatorView: View {
     @State private var animationOffset: CGFloat = 0
     
     var body: some View {
-        HStack {
-            HStack(spacing: 4) {
-                ForEach(0..<3) { index in
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 8) {
+                    // AI avatar
                     Circle()
-                        .fill(Color.gray)
-                        .frame(width: 8, height: 8)
-                        .offset(y: animationOffset)
-                        .animation(
-                            Animation.easeInOut(duration: 0.6)
-                                .repeatForever()
-                                .delay(Double(index) * 0.2),
-                            value: animationOffset
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 32, height: 32)
+                        .overlay(
+                            Image(systemName: "brain.head.profile")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.blue)
                         )
+                    
+                    HStack(spacing: 4) {
+                        ForEach(0..<3) { index in
+                            Circle()
+                                .fill(Color.gray.opacity(0.6))
+                                .frame(width: 8, height: 8)
+                                .offset(y: animationOffset)
+                                .animation(
+                                    Animation.easeInOut(duration: 0.6)
+                                        .repeatForever()
+                                        .delay(Double(index) * 0.2),
+                                    value: animationOffset
+                                )
+                        }
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
+                    )
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.gray.opacity(0.1))
-            )
-            Spacer(minLength: 50)
+            Spacer(minLength: 60)
         }
+        .padding(.horizontal, 4)
         .onAppear {
             animationOffset = -4
         }

@@ -8,11 +8,11 @@ HealthKit Data Generator uses [Apple's swift-log](https://github.com/apple/swift
 
 ### Two Subsystems
 
-1. **Package Subsystem** (`com.welltory.healthkit-data-generator.package`)
+1. **Package Subsystem** (`com.aminbenarieb.healthkit-data-generator.package`)
    - Used by the SPM package
    - Categories: generation, import, export, validation, llm, healthkit, profile, general
 
-2. **App Subsystem** (`com.welltory.healthkit-data-generator.app`)
+2. **App Subsystem** (`com.aminbenarieb.healthkit-data-generator.app`)
    - Used by the iOS app
    - Categories: ui, lifecycle, user-action, authorization
 
@@ -74,8 +74,8 @@ logger.info("Generation complete", metadata: [
 1. Open Console.app
 2. Select your device/simulator
 3. Filter by subsystem:
-   - Package logs: `subsystem:com.welltory.healthkit-data-generator.package`
-   - App logs: `subsystem:com.welltory.healthkit-data-generator.app`
+   - Package logs: `subsystem:com.aminbenarieb.healthkit-data-generator.package`
+   - App logs: `subsystem:com.aminbenarieb.healthkit-data-generator.app`
 4. Filter by category:
    - `category:generation`
    - `category:user-action`
@@ -95,10 +95,10 @@ Logs appear in Xcode's console when running the app. Format:
 xcrun simctl spawn booted log stream --predicate 'subsystem CONTAINS "healthkit-data-generator"'
 
 # Package logs only
-xcrun simctl spawn booted log stream --predicate 'subsystem == "com.welltory.healthkit-data-generator.package"'
+xcrun simctl spawn booted log stream --predicate 'subsystem == "com.aminbenarieb.healthkit-data-generator.package"'
 
 # App logs only
-xcrun simctl spawn booted log stream --predicate 'subsystem == "com.welltory.healthkit-data-generator.app"'
+xcrun simctl spawn booted log stream --predicate 'subsystem == "com.aminbenarieb.healthkit-data-generator.app"'
 
 # Specific category
 xcrun simctl spawn booted log stream --predicate 'subsystem CONTAINS "healthkit-data-generator" AND category == "generation"'
@@ -128,10 +128,10 @@ try? AppLogger.configureFileLogging(logDirectory: logsDirectory)
 
 ```bash
 # Export last 24 hours of package logs
-log show --predicate 'subsystem == "com.welltory.healthkit-data-generator.package"' --last 24h > package_logs.txt
+log show --predicate 'subsystem == "com.aminbenarieb.healthkit-data-generator.package"' --last 24h > package_logs.txt
 
 # Export last 24 hours of app logs
-log show --predicate 'subsystem == "com.welltory.healthkit-data-generator.app"' --last 24h > app_logs.txt
+log show --predicate 'subsystem == "com.aminbenarieb.healthkit-data-generator.app"' --last 24h > app_logs.txt
 
 # Export specific category
 log show --predicate 'subsystem CONTAINS "healthkit-data-generator" AND category == "generation"' --last 24h > generation_logs.txt

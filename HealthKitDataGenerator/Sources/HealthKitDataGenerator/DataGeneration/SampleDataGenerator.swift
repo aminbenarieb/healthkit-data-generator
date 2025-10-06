@@ -246,9 +246,41 @@ public class SampleDataGenerator {
         let calendar = Calendar.current
         var samples: [[String: Any]] = []
         
-        // Calculate sleep duration
-        let sleepDuration = Double.random(in: profile.sleepDurationRange)
-        let bedtimeHour = Int.random(in: profile.bedtimeRange) % 24
+        // Calculate sleep duration based on quality
+        let baseSleepDuration = Double.random(in: profile.sleepDurationRange)
+        let sleepDuration: Double
+        
+        // Adjust sleep duration based on quality
+        switch profile.sleepQuality {
+        case .poor:
+            // Poor sleep: shorter duration, more fragmented
+            sleepDuration = baseSleepDuration * Double.random(in: 0.6...0.8) // 60-80% of normal
+        case .fair:
+            // Fair sleep: slightly reduced duration
+            sleepDuration = baseSleepDuration * Double.random(in: 0.8...0.9) // 80-90% of normal
+        case .good:
+            // Good sleep: normal duration
+            sleepDuration = baseSleepDuration * Double.random(in: 0.9...1.0) // 90-100% of normal
+        case .excellent:
+            // Excellent sleep: full duration
+            sleepDuration = baseSleepDuration * Double.random(in: 1.0...1.1) // 100-110% of normal
+        }
+        
+        // Adjust bedtime based on sleep quality
+        let baseBedtimeHour = Int.random(in: profile.bedtimeRange) % 24
+        let bedtimeHour: Int
+        
+        switch profile.sleepQuality {
+        case .poor:
+            // Poor sleep: later bedtime, more irregular
+            bedtimeHour = (baseBedtimeHour + Int.random(in: 1...3)) % 24 // 1-3 hours later
+        case .fair:
+            // Fair sleep: slightly later bedtime
+            bedtimeHour = (baseBedtimeHour + Int.random(in: 0...2)) % 24 // 0-2 hours later
+        case .good, .excellent:
+            // Good sleep: normal bedtime
+            bedtimeHour = baseBedtimeHour
+        }
         
         // Sleep start time (previous day if bedtime is late)
         var sleepStart: Date
@@ -259,51 +291,210 @@ public class SampleDataGenerator {
             sleepStart = calendar.date(bySettingHour: bedtimeHour, minute: Int.random(in: 0...59), second: 0, of: previousDay)!
         }
         
-        let sleepEnd = sleepStart.addingTimeInterval(sleepDuration * 3600)
+        // Add some variability to wake time based on quality
+        let baseSleepEnd = sleepStart.addingTimeInterval(sleepDuration * 3600)
+        let sleepEnd: Date
+        
+        switch profile.sleepQuality {
+        case .poor:
+            // Poor sleep: earlier wake time, more variable
+            let wakeVariability = Double.random(in: -1.0...0.5) // 1 hour earlier to 30 min later
+            sleepEnd = baseSleepEnd.addingTimeInterval(wakeVariability * 3600)
+        case .fair:
+            // Fair sleep: slightly earlier wake time
+            let wakeVariability = Double.random(in: -0.5...0.5) // 30 min earlier to 30 min later
+            sleepEnd = baseSleepEnd.addingTimeInterval(wakeVariability * 3600)
+        case .good, .excellent:
+            // Good sleep: normal wake time
+            let wakeVariability = Double.random(in: -0.25...0.25) // 15 min earlier to 15 min later
+            sleepEnd = baseSleepEnd.addingTimeInterval(wakeVariability * 3600)
+        }
         
         // Generate sleep phases based on quality
         let deepSleepPercentage = Double.random(in: profile.sleepQuality.deepSleepPercentage)
         let deepSleepDuration = sleepDuration * deepSleepPercentage
-        let remSleepDuration = sleepDuration * 0.20
-        let lightSleepDuration = sleepDuration - deepSleepDuration - remSleepDuration
         
+        // REM sleep varies significantly with quality
+        let remPercentage = profile.sleepQuality == .poor ? 0.10...0.15 :
+                           profile.sleepQuality == .fair ? 0.15...0.18 :
+                           profile.sleepQuality == .good ? 0.18...0.22 : 0.20...0.25
+        let remSleepDuration = sleepDuration * Double.random(in: remPercentage)
+        
+        // Awake periods vary dramatically with quality
+        let awakePercentage = profile.sleepQuality == .poor ? 0.15...0.30 : 
+                             profile.sleepQuality == .fair ? 0.08...0.15 :
+                             profile.sleepQuality == .good ? 0.03...0.08 : 0.01...0.05
+        let awakeDuration = sleepDuration * Double.random(in: awakePercentage)
+        let lightSleepDuration = sleepDuration - deepSleepDuration - remSleepDuration - awakeDuration
+        
+        // Generate realistic sleep sequence based on quality
+        if profile.sleepQuality == .poor {
+            // Poor sleep: fragmented, lots of awake periods, minimal deep sleep
+            generateFragmentedSleep(
+                sleepStart: sleepStart,
+                sleepEnd: sleepEnd,
+                deepSleepDuration: deepSleepDuration,
+                remSleepDuration: remSleepDuration,
+                lightSleepDuration: lightSleepDuration,
+                awakeDuration: awakeDuration,
+                samples: &samples
+            )
+        } else {
+            // Good sleep: normal sequence with minimal interruptions
+            generateNormalSleep(
+                sleepStart: sleepStart,
+                sleepEnd: sleepEnd,
+                deepSleepDuration: deepSleepDuration,
+                remSleepDuration: remSleepDuration,
+                lightSleepDuration: lightSleepDuration,
+                awakeDuration: awakeDuration,
+                samples: &samples
+            )
+        }
+        
+        return samples
+    }
+    
+    // MARK: - Sleep Pattern Helpers
+    
+    private static func generateFragmentedSleep(
+        sleepStart: Date,
+        sleepEnd: Date,
+        deepSleepDuration: Double,
+        remSleepDuration: Double,
+        lightSleepDuration: Double,
+        awakeDuration: Double,
+        samples: inout [[String: Any]]
+    ) {
+        var currentTime = sleepStart
+        let totalDuration = sleepEnd.timeIntervalSince(sleepStart) / 3600 // hours
+        
+        // Poor sleep: multiple short sleep periods with frequent awakenings
+        let sleepPeriods = Int.random(in: 3...6) // 3-6 fragmented sleep periods
+        let awakePeriods = sleepPeriods - 1
+        
+        // Distribute sleep phases across periods
+        let periodDuration = totalDuration / Double(sleepPeriods)
+        let awakePeriodDuration = awakeDuration / Double(awakePeriods)
+        
+        for i in 0..<sleepPeriods {
+            let periodStart = currentTime
+            let periodEnd = currentTime.addingTimeInterval(periodDuration * 3600)
+            
+            // Each sleep period has light sleep, some deep sleep, and REM
+            let periodDeepSleep = deepSleepDuration / Double(sleepPeriods)
+            let periodRemSleep = remSleepDuration / Double(sleepPeriods)
+            let periodLightSleep = periodDuration - (periodDeepSleep + periodRemSleep)
+            
+            // Light sleep (most of the period)
+            let lightEnd = periodStart.addingTimeInterval(periodLightSleep * 3600)
+            samples.append([
+                "sdate": DateFormatter.iso8601.string(from: periodStart),
+                "edate": DateFormatter.iso8601.string(from: lightEnd),
+                "value": HKCategoryValueSleepAnalysis.asleepCore.rawValue
+            ])
+            
+            // Some deep sleep (if any left)
+            if periodDeepSleep > 0.1 { // At least 6 minutes
+                let deepEnd = lightEnd.addingTimeInterval(periodDeepSleep * 3600)
+                samples.append([
+                    "sdate": DateFormatter.iso8601.string(from: lightEnd),
+                    "edate": DateFormatter.iso8601.string(from: deepEnd),
+                    "value": HKCategoryValueSleepAnalysis.asleepDeep.rawValue
+                ])
+                currentTime = deepEnd
+            } else {
+                currentTime = lightEnd
+            }
+            
+            // Some REM sleep (if any left)
+            if periodRemSleep > 0.1 { // At least 6 minutes
+                let remEnd = currentTime.addingTimeInterval(periodRemSleep * 3600)
+                samples.append([
+                    "sdate": DateFormatter.iso8601.string(from: currentTime),
+                    "edate": DateFormatter.iso8601.string(from: remEnd),
+                    "value": HKCategoryValueSleepAnalysis.asleepREM.rawValue
+                ])
+                currentTime = remEnd
+            }
+            
+            // Add awake period between sleep periods (except after last period)
+            if i < sleepPeriods - 1 && awakePeriodDuration > 0.05 { // At least 3 minutes
+                let awakeEnd = currentTime.addingTimeInterval(awakePeriodDuration * 3600)
+                samples.append([
+                    "sdate": DateFormatter.iso8601.string(from: currentTime),
+                    "edate": DateFormatter.iso8601.string(from: awakeEnd),
+                    "value": HKCategoryValueSleepAnalysis.awake.rawValue
+                ])
+                currentTime = awakeEnd
+            }
+        }
+    }
+    
+    private static func generateNormalSleep(
+        sleepStart: Date,
+        sleepEnd: Date,
+        deepSleepDuration: Double,
+        remSleepDuration: Double,
+        lightSleepDuration: Double,
+        awakeDuration: Double,
+        samples: inout [[String: Any]]
+    ) {
         var currentTime = sleepStart
         
+        // Normal sleep: sequential phases with minimal interruptions
         // Light sleep phase 1
-        let lightPhase1End = currentTime.addingTimeInterval(lightSleepDuration * 0.3 * 3600)
+        let lightPhase1End = currentTime.addingTimeInterval(lightSleepDuration * 0.4 * 3600)
         samples.append([
             "sdate": DateFormatter.iso8601.string(from: currentTime),
             "edate": DateFormatter.iso8601.string(from: lightPhase1End),
-            "value": 2 // Light sleep
+            "value": HKCategoryValueSleepAnalysis.asleepCore.rawValue
         ])
         currentTime = lightPhase1End
         
-        // Deep sleep phase
+        // Deep sleep phase (early in the night)
         let deepPhaseEnd = currentTime.addingTimeInterval(deepSleepDuration * 3600)
         samples.append([
             "sdate": DateFormatter.iso8601.string(from: currentTime),
             "edate": DateFormatter.iso8601.string(from: deepPhaseEnd),
-            "value": 3 // Deep sleep
+            "value": HKCategoryValueSleepAnalysis.asleepDeep.rawValue
         ])
         currentTime = deepPhaseEnd
         
-        // REM sleep phase
+        // REM sleep phase (later in the night)
         let remPhaseEnd = currentTime.addingTimeInterval(remSleepDuration * 3600)
         samples.append([
             "sdate": DateFormatter.iso8601.string(from: currentTime),
             "edate": DateFormatter.iso8601.string(from: remPhaseEnd),
-            "value": 4 // REM sleep
+            "value": HKCategoryValueSleepAnalysis.asleepREM.rawValue
         ])
         currentTime = remPhaseEnd
         
-        // Light sleep phase 2
+        // Add minimal awake periods if any
+        if awakeDuration > 0.05 { // At least 3 minutes
+            let awakePeriods = Int.random(in: 1...2)
+            let awakePeriodDuration = awakeDuration / Double(awakePeriods)
+            
+            for _ in 0..<awakePeriods {
+                let awakeStart = currentTime.addingTimeInterval(Double.random(in: 0...0.5) * 3600)
+                let awakeEnd = awakeStart.addingTimeInterval(awakePeriodDuration * 3600)
+                
+                if awakeEnd <= sleepEnd {
+                    samples.append([
+                        "sdate": DateFormatter.iso8601.string(from: awakeStart),
+                        "edate": DateFormatter.iso8601.string(from: awakeEnd),
+                        "value": HKCategoryValueSleepAnalysis.awake.rawValue
+                    ])
+                }
+            }
+        }
+        
+        // Final light sleep phase
         samples.append([
             "sdate": DateFormatter.iso8601.string(from: currentTime),
             "edate": DateFormatter.iso8601.string(from: sleepEnd),
-            "value": 2 // Light sleep
+            "value": HKCategoryValueSleepAnalysis.asleepCore.rawValue
         ])
-        
-        return samples
     }
     
     // MARK: - Workouts Generation

@@ -2,7 +2,7 @@ import ProjectDescription
 
 let project = Project(
     name: "HealthKitDataGeneratorApp",
-    organizationName: "Welltory",
+    organizationName: "aminbenarieb",
     packages: [
         .local(path: "../HealthKitDataGenerator")
     ],
@@ -17,7 +17,7 @@ let project = Project(
             name: "HealthKitDataGeneratorApp",
             destinations: .iOS,
             product: .app,
-            bundleId: "com.welltory.healthkit-data-generator",
+            bundleId: "com.aminbenarieb.healthkit-data-generator",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(
                 with: [
@@ -53,7 +53,7 @@ let project = Project(
             name: "HealthKitDataGeneratorAppTests",
             destinations: .iOS,
             product: .unitTests,
-            bundleId: "com.welltory.healthkit-data-generator.tests",
+            bundleId: "com.aminbenarieb.healthkit-data-generator.tests",
             infoPlist: .default,
             sources: ["HealthKitDataGenerator/Tests/**"],
             resources: [],

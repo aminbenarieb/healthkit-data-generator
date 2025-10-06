@@ -13,9 +13,9 @@ Current version: `1.0`
 ```json
 {
   "schema_version": "1.0",
-  "generation_config": { ... },
+  "generation_config": { ... ],
   "samples": [ ... ] // Optional: direct sample specification
-}
+]
 ```
 
 ## Generation Config Schema
@@ -30,44 +30,26 @@ Current version: `1.0`
       "id": "marathon_trainer",
       "name": "Marathon Trainer",
       "description": "Training for marathon with high mileage",
-      "dailyStepsRange": {
-        "lowerBound": 15000,
-        "upperBound": 25000
-      },
+      "dailyStepsRange": [15000, 25000],
       "workoutFrequency": "active",
       "preferredWorkoutTypes": ["running", "cycling", "yoga"],
-      "sleepDurationRange": {
-        "lowerBound": 7.5,
-        "upperBound": 9.0
-      },
+      "sleepDurationRange": [7.5, 9.0],
       "sleepQuality": "good",
-      "bedtimeRange": {
-        "lowerBound": 22,
-        "upperBound": 23
-      },
-      "restingHeartRateRange": {
-        "lowerBound": 45,
-        "upperBound": 55
-      },
-      "maxHeartRateRange": {
-        "lowerBound": 180,
-        "upperBound": 195
-      },
+      "bedtimeRange": [22, 23],
+      "restingHeartRateRange": [45, 55],
+      "maxHeartRateRange": [180, 195],
       "heartRateVariability": "high",
       "basalEnergyMultiplier": 1.1,
-      "activeEnergyRange": {
-        "lowerBound": 800,
-        "upperBound": 1500
-      },
+      "activeEnergyRange": [800, 1500],
       "stressLevel": "moderate",
       "recoveryRate": "fast",
       "dietaryPattern": "high_protein",
       "hydrationLevel": "high"
-    },
+    ],
     "dateRange": {
       "startDate": "2025-01-01T00:00:00Z",
       "endDate": "2025-01-07T23:59:59Z"
-    },
+    ],
     "metricsToGenerate": [
       "steps",
       "heart_rate",
@@ -82,8 +64,8 @@ Current version: `1.0`
       "steps": {
         "multiplier": 1.2,
         "variability": 0.3
-      }
-    },
+      ]
+    ],
     "advancedPattern": {
       "type": "seasonal",
       "peakMonths": [6, 7, 8],
@@ -92,9 +74,9 @@ Current version: `1.0`
       "endMultiplier": 1.2,
       "interval": 2,
       "cyclePeriod": 7
-    }
-  }
-}
+    ]
+  ]
+]
 ```
 
 ## Field Definitions
@@ -215,13 +197,13 @@ You can also specify samples directly instead of using generation config:
       "date": "2025-01-01T10:30:00Z",
       "value": 15234,
       "unit": "count"
-    },
+    ],
     {
       "type": "HKQuantityTypeIdentifierHeartRate",
       "date": "2025-01-01T10:30:00Z",
       "value": 72,
       "unit": "count/min"
-    },
+    ],
     {
       "type": "HKWorkoutTypeIdentifier",
       "startDate": "2025-01-01T07:00:00Z",
@@ -230,15 +212,15 @@ You can also specify samples directly instead of using generation config:
       "duration": 3600,
       "totalDistance": 10000,
       "totalEnergyBurned": 450
-    },
+    ],
     {
       "type": "HKCategoryTypeIdentifierSleepAnalysis",
       "startDate": "2025-01-01T23:00:00Z",
       "endDate": "2025-01-02T07:00:00Z",
       "value": 0
-    }
+    ]
   ]
-}
+]
 ```
 
 ## Example Prompts for Foundation Model
@@ -261,17 +243,17 @@ and maintain a high-protein diet. Start from January 1, 2025.
       "id": "marathon_peak_training",
       "name": "Marathon Peak Training",
       "description": "Peak marathon training phase",
-      "dailyStepsRange": {"lowerBound": 18000, "upperBound": 30000},
+      "dailyStepsRange": [18000, 30000],
       "workoutFrequency": "active",
       "preferredWorkoutTypes": ["running", "yoga"],
-      "sleepDurationRange": {"lowerBound": 8.0, "upperBound": 9.5},
+      "sleepDurationRange": [8.0, 9.5],
       "sleepQuality": "excellent",
-      "bedtimeRange": {"lowerBound": 21, "upperBound": 22},
-      "restingHeartRateRange": {"lowerBound": 42, "upperBound": 50},
-      "maxHeartRateRange": {"lowerBound": 185, "upperBound": 200},
+      "bedtimeRange": [21, 22],
+      "restingHeartRateRange": [42, 50],
+      "maxHeartRateRange": [185, 200],
       "heartRateVariability": "high",
       "basalEnergyMultiplier": 1.15,
-      "activeEnergyRange": {"lowerBound": 1000, "upperBound": 1800},
+      "activeEnergyRange": [1000, 1800],
       "stressLevel": "moderate",
       "recoveryRate": "fast",
       "dietaryPattern": "high_protein",
@@ -308,32 +290,32 @@ Generate data for the past 2 weeks.
       "id": "stressed_engineer",
       "name": "Stressed Software Engineer",
       "description": "High stress, poor work-life balance",
-      "dailyStepsRange": {"lowerBound": 2000, "upperBound": 5000},
+      "dailyStepsRange": [2000, 5000],
       "workoutFrequency": "sedentary",
       "preferredWorkoutTypes": ["walking"],
-      "sleepDurationRange": {"lowerBound": 5.0, "upperBound": 6.5},
+      "sleepDurationRange": [5.0, 6.5],
       "sleepQuality": "poor",
-      "bedtimeRange": {"lowerBound": 1, "upperBound": 3},
-      "restingHeartRateRange": {"lowerBound": 75, "upperBound": 90},
-      "maxHeartRateRange": {"lowerBound": 165, "upperBound": 180},
+      "bedtimeRange": [1, 3],
+      "restingHeartRateRange": [75, 90],
+      "maxHeartRateRange": [165, 180],
       "heartRateVariability": "low",
       "basalEnergyMultiplier": 0.95,
-      "activeEnergyRange": {"lowerBound": 150, "upperBound": 400},
+      "activeEnergyRange": [150, 400],
       "stressLevel": "very_high",
       "recoveryRate": "slow",
       "dietaryPattern": "standard",
       "hydrationLevel": "low"
-    },
+    ],
     "dateRange": {
       "startDate": "2024-12-22T00:00:00Z",
       "endDate": "2025-01-05T23:59:59Z"
-    },
+    ],
     "metricsToGenerate": [
       "steps", "heart_rate", "sleep_analysis", "mindful_minutes"
     ],
     "pattern": "continuous"
-  }
-}
+  ]
+]
 ```
 
 ## Validation Rules
@@ -367,28 +349,28 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
       "id": "marathon_peak_training",
       "name": "Marathon Peak Training",
       "description": "Peak marathon training phase",
-      "dailyStepsRange": {"lowerBound": 18000, "upperBound": 30000},
+      "dailyStepsRange": [18000, 30000],
       "workoutFrequency": "active",
       "preferredWorkoutTypes": ["running", "yoga"],
-      "sleepDurationRange": {"lowerBound": 8.0, "upperBound": 9.5},
+      "sleepDurationRange": [8.0, 9.5],
       "sleepQuality": "excellent",
-      "bedtimeRange": {"lowerBound": 21, "upperBound": 22},
-      "restingHeartRateRange": {"lowerBound": 42, "upperBound": 50},
-      "maxHeartRateRange": {"lowerBound": 185, "upperBound": 200},
+      "bedtimeRange": [21, 22],
+      "restingHeartRateRange": [42, 50],
+      "maxHeartRateRange": [185, 200],
       "heartRateVariability": "high",
       "basalEnergyMultiplier": 1.15,
-      "activeEnergyRange": {"lowerBound": 1000, "upperBound": 1800},
+      "activeEnergyRange": [1000, 1800],
       "stressLevel": "moderate",
       "recoveryRate": "fast",
       "dietaryPattern": "high_protein",
       "hydrationLevel": "high"
-    },
+    ],
     "dateRange": {
       "type": "last_days",
       "startDate": "2025-01-01T00:00:00Z",
       "endDate": "2025-01-07T23:59:59Z",
       "days": 7
-    },
+    ],
     "metricsToGenerate": [
       "steps", "heart_rate", "workouts", "sleep_analysis", 
       "active_energy", "basal_energy", "water"
@@ -398,15 +380,15 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
       "type": "progressive",
       "startMultiplier": 0.8,
       "endMultiplier": 1.2
-    },
+    ],
     "customOverrides": {
       "steps": {
         "timePattern": "morning_peak",
         "multiplier": 1.2
-      }
-    }
-  }
-}
+      ]
+    ]
+  ]
+]
 ```
 
 #### Example 2: Recovery Week
@@ -424,28 +406,28 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
       "id": "recovery_athlete",
       "name": "Recovery Athlete",
       "description": "Athlete in recovery phase",
-      "dailyStepsRange": {"lowerBound": 5000, "upperBound": 8000},
+      "dailyStepsRange": [5000, 8000],
       "workoutFrequency": "light",
       "preferredWorkoutTypes": ["walking", "yoga"],
-      "sleepDurationRange": {"lowerBound": 8.5, "upperBound": 10.0},
+      "sleepDurationRange": [8.5, 10.0],
       "sleepQuality": "excellent",
-      "bedtimeRange": {"lowerBound": 21, "upperBound": 22},
-      "restingHeartRateRange": {"lowerBound": 50, "upperBound": 60},
-      "maxHeartRateRange": {"lowerBound": 160, "upperBound": 175},
+      "bedtimeRange": [21, 22],
+      "restingHeartRateRange": [50, 60],
+      "maxHeartRateRange": [160, 175],
       "heartRateVariability": "high",
       "basalEnergyMultiplier": 1.0,
-      "activeEnergyRange": {"lowerBound": 200, "upperBound": 400},
+      "activeEnergyRange": [200, 400],
       "stressLevel": "low",
       "recoveryRate": "fast",
       "dietaryPattern": "mediterranean",
       "hydrationLevel": "high"
-    },
+    ],
     "dateRange": {
       "type": "last_days",
       "startDate": "2025-01-01T00:00:00Z",
       "endDate": "2025-01-07T23:59:59Z",
       "days": 7
-    },
+    ],
     "metricsToGenerate": [
       "steps", "heart_rate", "sleep_analysis", "mindful_minutes"
     ],
@@ -453,16 +435,16 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
     "customOverrides": {
       "workouts": {
         "enabled": false
-      },
+      ],
       "active_energy": {
         "multiplier": 0.3
-      },
+      ],
       "sleep_analysis": {
-        "customRange": {"lowerBound": 8.5, "upperBound": 10.0}
-      }
-    }
-  }
-}
+        "customRange": [8.5, 10.0]
+      ]
+    ]
+  ]
+]
 ```
 
 ### Foundation Model Prompt Templates
@@ -501,7 +483,7 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
   "error": "invalid_schema",
   "message": "Missing required field: profile.dailyStepsRange",
   "field": "profile.dailyStepsRange"
-}
+]
 ```
 
 ### Invalid Values
@@ -512,7 +494,7 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
   "field": "profile.restingHeartRateRange.lowerBound",
   "value": 120,
   "allowed_range": "40-100"
-}
+]
 ```
 
 ### Physiologically Impossible
@@ -521,7 +503,7 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
   "error": "physiologically_impossible",
   "message": "Resting heart rate (90) is higher than max heart rate (85)",
   "fields": ["restingHeartRateRange", "maxHeartRateRange"]
-}
+]
 ```
 
 ## Best Practices for LLM Generation
@@ -539,8 +521,8 @@ The schema is designed to work seamlessly with Apple Foundation Model for natura
 let llmResponse = """
 {
   "schema_version": "1.0",
-  "generation_config": { ... }
-}
+  "generation_config": { ... ]
+]
 """
 
 do {
@@ -548,9 +530,9 @@ do {
     let generator = HealthKitDataGenerator(healthStore: healthStore)
     let samples = try generator.generate(config: config)
     try generator.populate(samplesTypes: shareTypes, generatedSamples: samples)
-} catch {
+] catch {
     print("Failed to import LLM data: \(error)")
-}
+]
 ```
 
 ## Version History

@@ -7,7 +7,7 @@ public enum AppLogger {
     
     // MARK: - Package Loggers (SPM)
     
-    private static let packageSubsystem = "com.welltory.healthkit-data-generator.package"
+    private static let packageSubsystem = "com.aminbenarieb.healthkit-data-generator.package"
     
     /// Logger for data generation operations
     public static let generation = Logger(label: "\(packageSubsystem).generation")
@@ -51,7 +51,7 @@ public enum AppLogger {
 /// Logging for the iOS app (separate from package)
 public enum AppUILogger {
     
-    private static let appSubsystem = "com.welltory.healthkit-data-generator.app"
+    private static let appSubsystem = "com.aminbenarieb.healthkit-data-generator.app"
     
     /// Logger for UI operations
     public static let ui = Logger(label: "\(appSubsystem).ui")

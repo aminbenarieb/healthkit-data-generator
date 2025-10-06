@@ -125,7 +125,7 @@ public enum HealthMetric: String, Codable, CaseIterable, Hashable {
 
 // MARK: - Generation Pattern
 
-public enum GenerationPattern: String, Codable {
+public enum GenerationPattern: String, Codable, CaseIterable {
     /// Generate samples for every day in the range
     case continuous = "continuous"
     

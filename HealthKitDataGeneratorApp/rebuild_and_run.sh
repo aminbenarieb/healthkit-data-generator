@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # App configuration
-BUNDLE_ID="com.welltory.healthkit-data-generator"
+BUNDLE_ID="com.aminbenarieb.healthkit-data-generator"
 APP_NAME="HealthKitDataGeneratorApp"
 WORKSPACE="HealthKitDataGeneratorApp.xcworkspace"
 SCHEME="HealthKitDataGeneratorApp"

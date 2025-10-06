@@ -25,7 +25,7 @@ public class AppleFoundationModelProvider: LLMProvider {
     }
     
     public init() {
-        self.languageModel = SystemLanguageModel.default
+        self.languageModel = SystemLanguageModel.init(guardrails: Guardrails.developerProvided)
         logger.info("Initialized Apple Foundation Model provider", metadata: [
             "availability": "\(languageModel.availability)",
             "framework": "FoundationModels"
@@ -48,7 +48,7 @@ public class AppleFoundationModelProvider: LLMProvider {
         
         // Create session if needed
         if session == nil {
-            session = LanguageModelSession()
+            session = LanguageModelSession(model: self.languageModel)
         }
         
         guard let session = session else {
@@ -75,10 +75,10 @@ public class AppleFoundationModelProvider: LLMProvider {
             logger.error("Failed to generate response", metadata: [
                 "error": "\(error.localizedDescription)"
             ])
-            
+            throw error
             // Fallback to mock response if real API fails
-            logger.warning("Falling back to mock response due to API error")
-            return try await generateEnhancedMockResponse(for: prompt)
+            // logger.warning("Falling back to mock response due to API error")
+            // return try await generateEnhancedMockResponse(for: prompt)
         }
     }
     
@@ -90,7 +90,7 @@ public class AppleFoundationModelProvider: LLMProvider {
         
         // Create session if needed
         if session == nil {
-            session = LanguageModelSession()
+            session = LanguageModelSession(model: self.languageModel)
         }
         
         guard let session = session else {
@@ -143,6 +143,8 @@ public class AppleFoundationModelProvider: LLMProvider {
         return """
         You are a health data generation assistant. Your task is to convert natural language requests into JSON configuration for generating realistic health data.
 
+        CRITICAL: Always calculate dates relative to TODAY. If the user asks for "2 weeks of data", generate data from 14 days ago to today. If they ask for "a month", generate data from 30 days ago to today.
+
         You must respond with ONLY a valid JSON object that follows this exact schema:
 
         {
@@ -152,25 +154,25 @@ public class AppleFoundationModelProvider: LLMProvider {
               "id": "profile_id",
               "name": "Profile Name",
               "description": "Profile description",
-              "dailyStepsRange": {"lowerBound": 8000, "upperBound": 12000},
+              "dailyStepsRange": [8000, 12000],
               "workoutFrequency": "moderate",
               "preferredWorkoutTypes": ["walking", "yoga"],
-              "sleepDurationRange": {"lowerBound": 7.0, "upperBound": 8.5},
+              "sleepDurationRange": [7.0, 8.5],
               "sleepQuality": "good",
-              "bedtimeRange": {"lowerBound": 22, "upperBound": 23},
-              "restingHeartRateRange": {"lowerBound": 60, "upperBound": 70},
-              "maxHeartRateRange": {"lowerBound": 170, "upperBound": 185},
+              "bedtimeRange": [22, 23],
+              "restingHeartRateRange": [60, 70],
+              "maxHeartRateRange": [170, 185],
               "heartRateVariability": "moderate",
               "basalEnergyMultiplier": 1.0,
-              "activeEnergyRange": {"lowerBound": 400, "upperBound": 800},
+              "activeEnergyRange": [400, 800],
               "stressLevel": "moderate",
               "recoveryRate": "average",
               "dietaryPattern": "mediterranean",
               "hydrationLevel": "moderate"
             },
             "dateRange": {
-              "startDate": "2025-01-01T00:00:00Z",
-              "endDate": "2025-01-07T23:59:59Z"
+              "startDate": "2024-12-26T00:00:00.000Z",
+              "endDate": "2025-01-02T23:59:59.999Z"
             },
             "metricsToGenerate": [
               "steps",
@@ -187,10 +189,17 @@ public class AppleFoundationModelProvider: LLMProvider {
 
         Key guidelines:
         - Use appropriate profile values based on the user's request
-        - Set realistic date ranges (default to 7 days if not specified)
+        - Calculate date ranges dynamically based on current date
+        - For "week" or "1 week": startDate = today - 7 days, endDate = today
+        - For "2 weeks" or "14 days": startDate = today - 14 days, endDate = today  
+        - For "month" or "30 days": startDate = today - 30 days, endDate = today
+        - For "3 months": startDate = today - 90 days, endDate = today
+        - Always use current date as endDate, calculate startDate by subtracting days
+        - Use ISO 8601 format: "YYYY-MM-DDTHH:mm:ss.sssZ"
         - Include relevant health metrics
         - Use "continuous" or "sparse" patterns as appropriate
         - Ensure all numeric ranges are realistic for the profile type
+        - IMPORTANT: All ranges must be arrays [lowerBound, upperBound], NOT objects with lowerBound/upperBound keys
         - Respond with ONLY the JSON, no additional text or explanation
         """
     }
@@ -264,27 +273,47 @@ public class AppleFoundationModelProvider: LLMProvider {
             profileDescription = "Well-rounded healthy lifestyle"
         }
         
-        // Determine date range
+        // Determine date range with current dates
+        let now = Date()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
         let dateRange: String
         if lowercasedPrompt.contains("week") {
+            let startDate = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+            let endDate = now
             dateRange = """
             "dateRange": {
-              "startDate": "2025-01-01T00:00:00Z",
-              "endDate": "2025-01-07T23:59:59Z"
+              "startDate": "\(formatter.string(from: startDate))",
+              "endDate": "\(formatter.string(from: endDate))"
             }
             """
         } else if lowercasedPrompt.contains("month") {
+            let startDate = Calendar.current.date(byAdding: .day, value: -30, to: now) ?? now
+            let endDate = now
             dateRange = """
             "dateRange": {
-              "startDate": "2025-01-01T00:00:00Z",
-              "endDate": "2025-01-31T23:59:59Z"
+              "startDate": "\(formatter.string(from: startDate))",
+              "endDate": "\(formatter.string(from: endDate))"
+            }
+            """
+        } else if lowercasedPrompt.contains("2 weeks") || lowercasedPrompt.contains("14 days") {
+            let startDate = Calendar.current.date(byAdding: .day, value: -14, to: now) ?? now
+            let endDate = now
+            dateRange = """
+            "dateRange": {
+              "startDate": "\(formatter.string(from: startDate))",
+              "endDate": "\(formatter.string(from: endDate))"
             }
             """
         } else {
+            // Default to last 7 days
+            let startDate = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+            let endDate = now
             dateRange = """
             "dateRange": {
-              "startDate": "2025-01-01T00:00:00Z",
-              "endDate": "2025-01-07T23:59:59Z"
+              "startDate": "\(formatter.string(from: startDate))",
+              "endDate": "\(formatter.string(from: endDate))"
             }
             """
         }
@@ -309,17 +338,17 @@ public class AppleFoundationModelProvider: LLMProvider {
               "id": "\(profileId)",
               "name": "\(profileName)",
               "description": "\(profileDescription)",
-              "dailyStepsRange": {"lowerBound": 8000, "upperBound": 12000},
+              "dailyStepsRange": [8000, 12000],
               "workoutFrequency": "moderate",
               "preferredWorkoutTypes": ["walking", "yoga"],
-              "sleepDurationRange": {"lowerBound": 7.0, "upperBound": 8.5},
+              "sleepDurationRange": [7.0, 8.5],
               "sleepQuality": "good",
-              "bedtimeRange": {"lowerBound": 22, "upperBound": 23},
-              "restingHeartRateRange": {"lowerBound": 60, "upperBound": 70},
-              "maxHeartRateRange": {"lowerBound": 170, "upperBound": 185},
+              "bedtimeRange": [22, 23],
+              "restingHeartRateRange": [60, 70],
+              "maxHeartRateRange": [170, 185],
               "heartRateVariability": "moderate",
               "basalEnergyMultiplier": 1.0,
-              "activeEnergyRange": {"lowerBound": 400, "upperBound": 800},
+              "activeEnergyRange": [400, 800],
               "stressLevel": "moderate",
               "recoveryRate": "average",
               "dietaryPattern": "mediterranean",
@@ -342,6 +371,23 @@ public class AppleFoundationModelProvider: LLMProvider {
     }
 }
 
+@available(iOS 26.0, *)
+struct Guardrails {
+    static var developerProvided: SystemLanguageModel.Guardrails {
+        var guardrails = SystemLanguageModel.Guardrails.default
+        
+        #if DEBUG
+        withUnsafeMutablePointer(to: &guardrails) { ptr in
+            let rawPtr = UnsafeMutableRawPointer(ptr)
+            let boolPtr = rawPtr.assumingMemoryBound(to: Bool.self)
+            boolPtr.pointee = false
+        }
+        #endif
+        
+        return guardrails
+    }
+}
+
 // MARK: - Real Apple Foundation Model Integration
 // 
 // This implementation uses the actual Apple Foundation Models framework
@@ -359,3 +405,5 @@ public class AppleFoundationModelProvider: LLMProvider {
 // - FoundationModels framework is not available
 // - Device doesn't support Apple Intelligence
 // - iOS version is below 18.0
+
+//
