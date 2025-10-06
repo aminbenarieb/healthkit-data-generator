@@ -1,6 +1,5 @@
 import Foundation
-import Logging
-import FoundationModels
+import Loggingimport FoundationModels
 
 // MARK: - Apple Foundation Model Provider
 
