@@ -6,8 +6,7 @@ import PackageDescription
 let package = Package(
     name: "HealthKitDataGenerator",
     platforms: [
-        .iOS(.v16),
-        .macOS(.v13),
+        .iOS("18.0"),
     ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
