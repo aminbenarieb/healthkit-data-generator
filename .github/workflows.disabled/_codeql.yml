@@ -1,0 +1,62 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 8 * * 1'  # Weekly on Mondays at 8 AM UTC
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: macos-14
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'swift' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended,quality
+
+    - name: Select Xcode Version
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+
+    - name: Install Tuist
+      run: |
+        curl -Ls https://install.tuist.io | bash
+        echo "$HOME/.tuist/bin" >> $GITHUB_PATH
+
+    - name: Generate and Build Project
+      run: |
+        cd HealthGeneratorApp
+        tuist generate --no-open
+        xcodebuild -workspace HealthGeneratorApp.xcworkspace \
+          -scheme HealthGeneratorApp \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0' \
+          -configuration Debug \
+          build \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Build Swift Package
+      run: |
+        cd HealthKitDataGenerator
+        swift build
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:${{matrix.language}}"

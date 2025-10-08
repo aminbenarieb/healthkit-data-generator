@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.0.app/Contents/Developer
+
+jobs:
+
+  test-swift-package:
+    name: Test Swift Package
+    runs-on: macos-26
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode Version
+      run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+
+    # - name: Setup Swift
+    #   uses: SwiftyLab/setup-swift@latest
+    
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v3
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+    
+    - name: Build Swift Package
+      run: swift build -v
+    
+    - name: Run Swift Package Tests
+      run: swift test -v
+
+  build-ios-app:
+    name: Build iOS App
+    runs-on: macos-26
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode Version
+      run: sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+    
+    - name: Install Tuist
+      run: |
+        brew install tuist/tuist/tuist
+        echo "$(brew --prefix)/bin" >> $GITHUB_PATH
+    
+    - name: Cache Tuist
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.tuist/Cache
+          ~/Library/Caches/tuist
+        key: ${{ runner.os }}-tuist-${{ hashFiles('**/Project.swift', '**/Tuist.swift') }}
+        restore-keys: |
+          ${{ runner.os }}-tuist-
+    
+    - name: Generate Xcode Project
+      run: |
+        cd HealthKitDataGeneratorApp
+        tuist generate --no-open
+    
+    - name: Build iOS App
+      run: |
+        cd HealthKitDataGeneratorApp
+        xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
+          -scheme HealthKitDataGeneratorApp \
+          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.0' \
+          -configuration Debug \
+          build \
+          CODE_SIGNING_ALLOWED=NO
+    
+    - name: Run iOS App Tests
+      run: |
+        cd HealthKitDataGeneratorApp
+        xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
+          -scheme HealthKitDataGeneratorApp \
+          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.0' \
+          -configuration Debug \
+          test \
+          CODE_SIGNING_ALLOWED=NO
+
+  # lint:
+  #   name: SwiftLint
+  #   runs-on: macos-14
+    
+  #   steps:
+  #   - uses: actions/checkout@v4
+    
+  #   - name: Install SwiftLint
+  #     run: brew install swiftlint
+    
+  #   - name: Run SwiftLint
+  #     run: swiftlint lint --reporter github-actions-logging
