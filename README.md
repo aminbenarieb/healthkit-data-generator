@@ -7,6 +7,8 @@
 [![iOS 18.0+](https://img.shields.io/badge/iOS-18.0+-blue.svg)](https://developer.apple.com/ios/) -->
 [![CI](https://github.com/aminbenarieb/healthkit-data-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/aminbenarieb/healthkit-data-generator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Faminbenarieb%2Fhealthkit-data-generator%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/aminbenarieb/healthkit-data-generator)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Faminbenarieb%2Fhealthkit-data-generator%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/aminbenarieb/healthkit-data-generator)
 
 ## Overview
 
