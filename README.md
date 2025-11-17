@@ -18,6 +18,12 @@ HealthKitDataGenerator is a comprehensive Swift package that provides tools for:
 - **Data Export**: Export HealthKit data to JSON format with flexible configuration
 - **Data Import**: Import health data from JSON profiles into HealthKit
 
+### Why use this?
+
+- Seed HealthKit with realistic data in minutes
+- Perfect for screenshots, demos, UI tests, and QA
+- AI-powered configs: “Create 2 weeks of marathon training” → ready-to-use samples
+
 ## Demo Videos
 
 | Manual Generation  | LLM Generation  | 
@@ -40,6 +46,9 @@ dependencies: [
     .package(url: "https://github.com/aminbenarieb/healthkit-data-generator", from: "0.1.0")
 ]
 ```
+
+### Building the app
+This project uses [Tuist](https://tuist.io). Refer to their website to install it, then run `tuist generate`.
 
 ## Usage
 
