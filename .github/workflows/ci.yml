@@ -73,7 +73,7 @@ jobs:
         cd HealthKitDataGeneratorApp
         xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
           -scheme HealthKitDataGeneratorApp \
-          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.0' \
+          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.1' \
           -configuration Debug \
           build \
           CODE_SIGNING_ALLOWED=NO
@@ -83,7 +83,7 @@ jobs:
         cd HealthKitDataGeneratorApp
         xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
           -scheme HealthKitDataGeneratorApp \
-          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.0' \
+          -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.1' \
           -configuration Debug \
           test \
           CODE_SIGNING_ALLOWED=NO
