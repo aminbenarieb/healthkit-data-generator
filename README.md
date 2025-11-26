@@ -9,6 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Faminbenarieb%2Fhealthkit-data-generator%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/aminbenarieb/healthkit-data-generator)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Faminbenarieb%2Fhealthkit-data-generator%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/aminbenarieb/healthkit-data-generator)
+[![Tuist Preview](https://tuist.dev/amin-benarieb-work/healthkit-data-generator/previews/latest/badge.svg)](https://tuist.dev/<your-account>/<your-project>/previews/latest)
 
 ## Overview
 
