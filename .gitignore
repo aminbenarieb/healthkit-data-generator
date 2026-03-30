@@ -146,3 +146,4 @@ ExportOptions*.plist
 buildServer.json
 videos
 .actrc
+HealthKitDataGeneratorApp/.claude/settings.local.json

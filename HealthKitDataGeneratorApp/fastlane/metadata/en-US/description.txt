@@ -1,0 +1,32 @@
+HealthKit Data Generator is a powerful tool for developers and QA engineers to populate Apple HealthKit with realistic sample health data. Perfect for screenshots, demos, UI testing, and quality assurance.
+
+KEY FEATURES
+
+Manual Data Generation
+- Choose from preset health profiles: Athletic, Balanced, Stressed, or Sedentary
+- Customize date ranges and generation patterns
+- Fine-grained control over which health metrics to generate
+- Advanced pattern settings including continuous, sparse, and custom probability modes
+
+AI-Powered Generation
+- Describe the health data you need in plain English
+- Powered by Apple Foundation Models
+- Example: "Create 2 weeks of marathon training data for an active athlete"
+
+18 Health Metrics Supported
+- Steps, Heart Rate, Heart Rate Variability
+- Sleep Analysis, Workouts, Active & Basal Energy
+- Blood Pressure, Blood Glucose, Body Mass
+- Body Fat, Lean Body Mass, Water Intake
+- Mindful Minutes, Respiratory Rate, Oxygen Saturation
+- Dietary Tracking: Sugar, Protein, Carbs, Fat
+
+Data Management
+- Export HealthKit data to JSON
+- Import health data from JSON profiles
+- Clean up generated test data with one tap
+
+10 Workout Types
+Running, Cycling, Swimming, Walking, Yoga, Strength Training, HIIT, Pilates, Dancing, and Sports
+
+Built for developers who need realistic HealthKit data without manually entering hundreds of data points. Seed your HealthKit store in minutes, not hours.

@@ -1,0 +1,7 @@
+Initial release of HealthKit Data Generator.
+
+- Manual data generation with 4 preset health profiles
+- AI-powered data generation using natural language prompts
+- Support for 18 health metrics and 10 workout types
+- JSON import and export
+- One-tap data cleanup
