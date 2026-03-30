@@ -6,8 +6,8 @@ import Logging
 struct HealthKitDataGeneratorApp: App {
     
     init() {
-        // Bootstrap logging with debug level for development
-        AppLogger.bootstrap(logLevel: .debug)
+        // Bootstrap logging
+        AppLogger.bootstrap(logLevel: .info)
         
         // Log app launch
         AppUILogger.lifecycle.info("🚀 App launched")
