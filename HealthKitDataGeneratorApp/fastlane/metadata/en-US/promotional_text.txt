@@ -1,1 +1,0 @@
-Populate HealthKit with realistic sample data in minutes. Perfect for app development, testing, and demos.

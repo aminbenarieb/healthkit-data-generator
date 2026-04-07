@@ -27,7 +27,7 @@ opt_in_rules:
   - vertical_whitespace_opening_braces
 
 included:
-  - HealthKitDataGenerator/Sources
+  - HealthDataGenerator/Sources
   - HealthGeneratorApp/HealthGeneratorApp/Sources
 
 excluded:

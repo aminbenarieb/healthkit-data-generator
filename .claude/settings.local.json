@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"privacy\\\\|terms\\\\|policy\\\\|TERMS\\\\|PRIVACY\" /Users/aminbenarieb/repo/open_source/health-generator-app --include=*.swift --include=*.md)",
+      "Bash(ls *.xcworkspace *.xcodeproj)",
+      "Bash(ls HealthDataGeneratorApp/*.xcworkspace HealthDataGeneratorApp/*.xcodeproj)",
+      "Bash(xcodebuild -workspace HealthDataGeneratorApp/HealthDataGeneratorApp.xcworkspace -scheme HealthDataGeneratorApp -destination 'platform=iOS Simulator,name=iPad Air 11-inch \\(M2\\)' build)",
+      "Bash(sed -i '' 's/HealthKit authorization/Health authorization/g' HealthKitDataGeneratorApp/HealthKitDataGeneratorApp/Sources/HealthKitManager.swift)",
+      "Bash(sed -i '' 's/HealthKit is not available/Health data is not available/g' HealthKitDataGeneratorApp/HealthKitDataGeneratorApp/Sources/HealthKitManager.swift)",
+      "Bash(sed -i '' 's/HealthKit data cleanup/Health data cleanup/g' HealthKitDataGeneratorApp/HealthKitDataGeneratorApp/Sources/HealthKitManager.swift)",
+      "Bash(sed -i '' 's/HealthKit not authorized/Health not authorized/g' HealthKitDataGeneratorApp/HealthKitDataGeneratorApp/Sources/HealthKitManager.swift)",
+      "Bash(sed -i '' 's/HealthKit permission is required. Please authorize HealthKit access first./Health permission is required. Please authorize Health access first./g' HealthKitDataGeneratorApp/HealthKitDataGeneratorApp/Sources/HealthKitManager.swift)"
+    ]
+  }
+}

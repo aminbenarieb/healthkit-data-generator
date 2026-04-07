@@ -14,11 +14,11 @@
 ### Using Preset Profiles
 
 ```swift
-import HealthKitDataGenerator
+import HealthDataGenerator
 import HealthKit
 
 let healthStore = HKHealthStore()
-let generator = HealthKitDataGenerator(healthStore: healthStore)
+let generator = HealthDataGenerator(healthStore: healthStore)
 
 // Generate 7 days of data with sporty profile
 let config = SampleGenerationConfig(
@@ -26,7 +26,7 @@ let config = SampleGenerationConfig(
     dateRange: .lastDays(7)
 )
 
-let allTypes = HealthKitConstants.authorizationWriteTypes()
+let allTypes = HealthConstants.authorizationWriteTypes()
 try generator.generateAndPopulate(samplesTypes: allTypes, config: config)
 ```
 
@@ -300,10 +300,10 @@ let data2 = generator.generate(config: config)
 
 ```swift
 import SwiftUI
-import HealthKitDataGenerator
+import HealthDataGenerator
 
 struct ContentView: View {
-    @StateObject private var healthKitManager = HealthKitManager.shared
+    @StateObject private var healthManager = HealthManager.shared
     @State private var selectedProfile: HealthProfile = .balanced
     @State private var sampleCount: Int = 7
     
@@ -321,12 +321,12 @@ struct ContentView: View {
             
             // Generate button
             Button("Generate Data") {
-                healthKitManager.generateHealthData(
+                healthManager.generateHealthData(
                     count: sampleCount,
                     profile: selectedProfile
                 )
             }
-            .disabled(healthKitManager.isGeneratingInProgress)
+            .disabled(healthManager.isGeneratingInProgress)
         }
     }
 }
@@ -337,7 +337,7 @@ struct ContentView: View {
 
 ```swift
 struct JSONImportView: View {
-    @StateObject private var healthKitManager = HealthKitManager.shared
+    @StateObject private var healthManager = HealthManager.shared
     @State private var jsonText = ""
     
     var body: some View {
@@ -346,9 +346,9 @@ struct JSONImportView: View {
                 .border(Color.gray)
             
             Button("Import JSON") {
-                healthKitManager.importFromJSON(jsonText)
+                healthManager.importFromJSON(jsonText)
             }
-            .disabled(healthKitManager.isGeneratingInProgress)
+            .disabled(healthManager.isGeneratingInProgress)
         }
     }
 }
@@ -359,7 +359,7 @@ struct JSONImportView: View {
 ### Generate Without Populating
 
 ```swift
-// Generate data but don't save to HealthKit
+// Generate data but don't save to Apple Health
 let samples = generator.generate(config: config)
 
 // Inspect or modify samples

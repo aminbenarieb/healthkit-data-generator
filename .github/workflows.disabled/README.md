@@ -22,9 +22,9 @@ These GitHub Actions workflows have been temporarily disabled.
 ## Note:
 
 Before re-enabling, make sure to update the folder names in the workflows:
-- `HealthGeneratorApp` → `HealthKitDataGeneratorApp`
-- `HealthGeneratorApp.xcworkspace` → `HealthKitDataGeneratorApp.xcworkspace`
-- `-scheme HealthGeneratorApp` → `-scheme HealthKitDataGeneratorApp`
+- `HealthGeneratorApp` → `HealthDataGeneratorApp`
+- `HealthGeneratorApp.xcworkspace` → `HealthDataGeneratorApp.xcworkspace`
+- `-scheme HealthGeneratorApp` → `-scheme HealthDataGeneratorApp`
 
 ## Disabled on:
 October 5, 2025

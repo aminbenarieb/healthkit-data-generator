@@ -53,7 +53,7 @@ jobs:
 
     - name: Build Swift Package
       run: |
-        cd HealthKitDataGenerator
+        cd HealthDataGenerator
         swift build
 
     - name: Perform CodeQL Analysis

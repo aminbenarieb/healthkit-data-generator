@@ -65,14 +65,14 @@ jobs:
     
     - name: Generate Xcode Project
       run: |
-        cd HealthKitDataGeneratorApp
+        cd HealthDataGeneratorApp
         tuist generate --no-open
     
     - name: Build iOS App
       run: |
-        cd HealthKitDataGeneratorApp
-        xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
-          -scheme HealthKitDataGeneratorApp \
+        cd HealthDataGeneratorApp
+        xcodebuild -workspace HealthDataGeneratorApp.xcworkspace \
+          -scheme HealthDataGeneratorApp \
           -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.1' \
           -configuration Debug \
           build \
@@ -80,9 +80,9 @@ jobs:
     
     - name: Run iOS App Tests
       run: |
-        cd HealthKitDataGeneratorApp
-        xcodebuild -workspace HealthKitDataGeneratorApp.xcworkspace \
-          -scheme HealthKitDataGeneratorApp \
+        cd HealthDataGeneratorApp
+        xcodebuild -workspace HealthDataGeneratorApp.xcworkspace \
+          -scheme HealthDataGeneratorApp \
           -destination 'platform=iOS Simulator,name=iPhone Air,OS=26.1' \
           -configuration Debug \
           test \

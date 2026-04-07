@@ -1,4 +1,4 @@
-# LLM JSON Schema for HealthKit Data Generation
+# LLM JSON Schema for Health Data Generation
 
 ## Overview
 
@@ -496,7 +496,7 @@ let llmResponse = """
 
 do {
     let config = try SampleGenerationConfig.fromJSON(llmResponse)
-    let generator = HealthKitDataGenerator(healthStore: healthStore)
+    let generator = HealthDataGenerator(healthStore: healthStore)
     let samples = try generator.generate(config: config)
     try generator.populate(samplesTypes: shareTypes, generatedSamples: samples)
 ] catch {

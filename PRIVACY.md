@@ -1,24 +1,24 @@
 # Privacy Policy
 
-**HealthKit Data Generator**
+**Health Data Generator**
 Last updated: March 21, 2026
 
 ## Overview
 
-HealthKit Data Generator is a developer tool that generates sample health data and writes it to Apple HealthKit on your device. Your privacy is important to us, and this policy explains how the app handles your data.
+Health Data Generator is a developer tool that generates sample health data and writes it to Apple Health on your device. Your privacy is important to us, and this policy explains how the app handles your data.
 
 ## Data Collection
 
 **We do not collect, store, or transmit any personal data.** The app operates entirely on your device.
 
-## HealthKit Data
+## Health Data
 
-The app requests read and write access to Apple HealthKit to:
+The app requests read and write access to Apple Health to:
 
-- **Write**: Generate and save sample health data (steps, heart rate, sleep, workouts, and other health metrics) to your device's HealthKit store.
-- **Read**: Read existing HealthKit data for export to JSON format.
+- **Write**: Generate and save sample health data (steps, heart rate, sleep, workouts, and other health metrics) to your device's Health store.
+- **Read**: Read existing Health data for export to JSON format.
 
-All HealthKit data remains on your device and is never transmitted to any external server or third party.
+All Health data remains on your device and is never transmitted to any external server or third party.
 
 ## AI-Powered Generation
 
@@ -34,7 +34,7 @@ We do not share any data with third parties. The app has no server-side componen
 
 ## Data Retention
 
-The app does not store any data outside of Apple HealthKit. Generated health data can be removed from HealthKit at any time using the app's built-in cleanup feature.
+The app does not store any data outside of Apple Health. Generated health data can be removed from Apple Health at any time using the app's built-in cleanup feature.
 
 ## Children's Privacy
 

@@ -1,4 +1,4 @@
-# HealthKit Data Generator
+# Health Data Generator
 
 <!-- 
 [![Release](https://github.com/aminbenarieb/healthkit-data-generator/actions/workflows/release.yml/badge.svg)](https://github.com/aminbenarieb/healthkit-data-generator/actions/workflows/release.yml)
@@ -13,15 +13,15 @@
 
 ## Overview
 
-HealthKitDataGenerator is a comprehensive Swift package that provides tools for:
+HealthDataGenerator is a comprehensive Swift package that provides tools for:
 
 - **Data Generation**: Create realistic sample health data for testing
-- **Data Export**: Export HealthKit data to JSON format with flexible configuration
-- **Data Import**: Import health data from JSON profiles into HealthKit
+- **Data Export**: Export Health data to JSON format with flexible configuration
+- **Data Import**: Import health data from JSON profiles into Apple Health
 
 ### Why use this?
 
-- Seed HealthKit with realistic data in minutes
+- Seed Apple Health with realistic data in minutes
 - Perfect for screenshots, demos, UI tests, and QA
 - AI-powered configs: “Create 2 weeks of marathon training” → ready-to-use samples
 
@@ -40,7 +40,7 @@ This project is inspired by and builds upon the excellent work done in [healthki
 
 ### Swift Package Manager
 
-Add the HealthKitDataGenerator package to your project:
+Add the HealthDataGenerator package to your project:
 
 ```swift
 dependencies: [
@@ -56,11 +56,11 @@ This project uses [Tuist](https://tuist.io). Refer to their website to install i
 ### Preset Profiles
 
 ```swift
-import HealthKitDataGenerator
+import HealthDataGenerator
 import HealthKit
 
 let healthStore = HKHealthStore()
-let generator = HealthKitDataGenerator(healthStore: healthStore)
+let generator = HealthDataGenerator(healthStore: healthStore)
 
 // Generate 7 days of data with sporty profile
 let config = SampleGenerationConfig(
@@ -68,7 +68,7 @@ let config = SampleGenerationConfig(
     dateRange: .lastDays(7)
 )
 
-let allTypes = HealthKitConstants.authorizationWriteTypes()
+let allTypes = HealthConstants.authorizationWriteTypes()
 try generator.generateAndPopulate(samplesTypes: allTypes, config: config)
 ```
 
@@ -89,7 +89,7 @@ try generator.generateAndPopulate(samplesTypes: allTypes, config: config1)
 
 ### Comprehensive Examples
 
-This repository includes a SwiftUI demo app (`HealthKitDataGeneratorApp/`) showcasing all package features with an intuitive interface for both manual and AI-powered health data generation.
+This repository includes a SwiftUI demo app (`HealthDataGeneratorApp/`) showcasing all package features with an intuitive interface for both manual and AI-powered health data generation.
 
 For detailed usage examples covering all features, see [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) which includes custom profiles, date ranges, metric selection, generation patterns, LLM integration, and app integration examples.
 
@@ -98,7 +98,7 @@ For detailed usage examples covering all features, see [USAGE_EXAMPLES.md](USAGE
 The `LLMManager` enables AI-powered health data generation from natural language descriptions. It supports multiple LLM providers through a unified interface and automatically routes requests to the best available provider.
 
 ```swift
-import HealthKitDataGenerator
+import HealthDataGenerator
 import HealthKit
 
 let healthStore = HKHealthStore()
@@ -110,7 +110,7 @@ let response = try await llmManager.generateHealthConfig(from:
 )
 
 // Import the generated configuration
-let generator = HealthKitDataGenerator(healthStore: healthStore)
+let generator = HealthDataGenerator(healthStore: healthStore)
 try generator.importFromLLMJSON(response.json)
 ```
 
@@ -145,7 +145,7 @@ The generated JSON follows the schema defined in [LLM_JSON_SCHEMA.md](LLM_JSON_S
 <!-- ### Data Export
 
 ```swift
-import HealthKitDataGenerator
+import HealthDataGenerator
 
 
 ```
@@ -153,7 +153,7 @@ import HealthKitDataGenerator
 ### Data Import
 
 ```swift
-import HealthKitDataGenerator
+import HealthDataGenerator
 
 ``` -->
 
