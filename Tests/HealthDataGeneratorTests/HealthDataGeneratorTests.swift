@@ -189,6 +189,58 @@ final class HealthDataGeneratorTests {
         #expect(stressed.stressLevel == .veryHigh)
     }
     
+    @Test("Sample Generation - Resting Heart Rate")
+    func testRestingHeartRateGeneration() {
+        let profile = HealthProfile.sporty
+        let dateRange = DateRange.lastDays(3)
+        let config = SampleGenerationConfig(
+            profile: profile,
+            dateRange: dateRange,
+            metricsToGenerate: [.restingHeartRate],
+            randomSeed: 123
+        )
+        
+        let samples = SampleDataGenerator.generateSamples(config: config)
+        let restingHRSamples = samples[HealthMetric.restingHeartRate.healthKitIdentifier] as? [[String: Any]]
+        
+        #expect(restingHRSamples != nil)
+        #expect((restingHRSamples?.count ?? 0) >= 3)
+        
+        if let firstSample = restingHRSamples?.first {
+            #expect(firstSample["unit"] as? String == "count/min")
+            let value = firstSample["value"] as? Double
+            #expect(value != nil)
+            if let val = value {
+                #expect(val >= Double(profile.restingHeartRateRange.lowerBound))
+                #expect(val <= Double(profile.restingHeartRateRange.upperBound))
+            }
+            #expect(firstSample["sdate"] is String)
+            
+            // Verify SampleCreator parses it successfully
+            let healthStore = HKHealthStore()
+            let creator = SampleCreatorRegistry.get(healthStore, HealthMetric.restingHeartRate.healthKitIdentifier)
+            #expect(creator != nil)
+            let sample = creator?.createSample(firstSample as AnyObject) as? HKQuantitySample
+            #expect(sample != nil)
+            #expect(sample?.sampleType == HKQuantityType.quantityType(forIdentifier: .restingHeartRate))
+        }
+    }
+    
+    @Test("Sample Generation - Resting Heart Rate with Override")
+    func testRestingHeartRateWithOverride() {
+        let config = SampleGenerationConfig(
+            profile: .balanced,
+            dateRange: .lastDays(1),
+            metricsToGenerate: [.restingHeartRate],
+            customOverrides: [
+                "resting_heart_rate": MetricOverride(fixedValue: 58.0)
+            ]
+        )
+        let samples = SampleDataGenerator.generateSamples(config: config)
+        let restingHRSamples = samples[HealthMetric.restingHeartRate.healthKitIdentifier] as? [[String: Any]]
+        #expect(restingHRSamples?.first?["value"] as? Double == 58.0)
+    }
+    
     // MARK: - JSON Handling Tests
     
     @Test("JSON Handling - Export Configuration Serialization")

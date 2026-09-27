@@ -95,6 +95,7 @@ public enum HealthMetric: String, Codable, CaseIterable, Hashable {
     case dietaryFat = "dietary_fat"
     case respiratoryRate = "respiratory_rate"
     case oxygenSaturation = "oxygen_saturation"
+    case restingHeartRate = "resting_heart_rate"
     
     /// Health identifier mapping
     public var healthKitIdentifier: String {
@@ -119,6 +120,7 @@ public enum HealthMetric: String, Codable, CaseIterable, Hashable {
         case .dietaryFat: return "HKQuantityTypeIdentifierDietaryFatTotal"
         case .respiratoryRate: return "HKQuantityTypeIdentifierRespiratoryRate"
         case .oxygenSaturation: return "HKQuantityTypeIdentifierOxygenSaturation"
+        case .restingHeartRate: return "HKQuantityTypeIdentifierRestingHeartRate"
         }
     }
 }

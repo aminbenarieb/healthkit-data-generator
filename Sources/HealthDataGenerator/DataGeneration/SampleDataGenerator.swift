@@ -142,6 +142,8 @@ public class SampleDataGenerator {
             return generateRespiratoryRate(for: date, profile: profile, config: config)
         case .oxygenSaturation:
             return generateOxygenSaturation(for: date, profile: profile, config: config)
+        case .restingHeartRate:
+            return generateRestingHeartRate(for: date, profile: profile, config: config)
         default:
             return [] // Not yet implemented
         }
@@ -870,6 +872,39 @@ public class SampleDataGenerator {
             "sdate": DateFormatter.iso8601.string(from: morningTime),
             "value": oxygenSat,
             "unit": "%"
+        ]]
+    }
+    
+    // MARK: - Resting Heart Rate Generation
+    
+    private static func generateRestingHeartRate(
+        for date: Date,
+        profile: HealthProfile,
+        config: SampleGenerationConfig
+    ) -> [[String: Any]] {
+        let calendar = Calendar.current
+        guard let morningTime = calendar.date(bySettingHour: 7, minute: 0, second: 0, of: date) else {
+            return []
+        }
+        
+        var restingHR = Double(Int.random(in: profile.restingHeartRateRange))
+        
+        // Apply metric override if provided
+        if let override = config.customOverrides?[HealthMetric.restingHeartRate.rawValue]
+            ?? config.customOverrides?["restingHeartRate"] {
+            if let fixed = override.fixedValue {
+                restingHR = fixed
+            } else if let multiplier = override.multiplier {
+                restingHR *= multiplier
+            } else if let customRange = override.customRange {
+                restingHR = Double.random(in: customRange.range)
+            }
+        }
+        
+        return [[
+            "sdate": DateFormatter.iso8601.string(from: morningTime),
+            "value": restingHR,
+            "unit": "count/min"
         ]]
     }
     

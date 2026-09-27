@@ -131,6 +131,7 @@ Current version: `1.0`
 All available metrics:
 - `steps`
 - `heart_rate`
+- `resting_heart_rate`
 - `heart_rate_variability`
 - `sleep_analysis`
 - `workouts`

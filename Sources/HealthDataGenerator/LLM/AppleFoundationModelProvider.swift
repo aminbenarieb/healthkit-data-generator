@@ -136,7 +136,7 @@ public class AppleFoundationModelProvider: LLMProvider {
               "startDate": "YYYY-MM-DDTHH:mm:ss.sssZ",
               "endDate": "YYYY-MM-DDTHH:mm:ss.sssZ"
             },
-            "metricsToGenerate": ["steps", "heart_rate", "workouts", "sleep_analysis", "active_energy", "basal_energy"],
+            "metricsToGenerate": ["steps", "heart_rate", "resting_heart_rate", "workouts", "sleep_analysis", "active_energy", "basal_energy"],
             "pattern": "continuous|sparse|weekdays_only|weekends_only",
             "randomSeed": integer_number
           }
